@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bracelet Color Studio</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        :root {
+            --bg: #0b0f1a;
+            --panel: #161b2a;
+            --panel-light: #1f263d;
+            --accent: #60a5fa;
+            --border: #2d334a;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: #fff;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        header {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--panel);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .color-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--panel-light);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        input[type="color"] {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border: none;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: #0b0f1a;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 5px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            text-align: center;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0b0f1a;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        /* ARTBOARD AREA */
+        .preview-area {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 500px;
+            overflow: hidden;
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7);
+        }
+
+        /* THE RIBBON ZOOM WINDOW */
+        .preview-bar-wrapper {
+            width: 100%;
+            height: 90px;
+            /* Fixed height acts as the 'crop' */
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            /* Hides the extra parts of the zoomed SVG */
+            position: relative;
+        }
+
+        .preview-bar-wrapper svg {
+            /* Forced Macro Zoom */
+            height: 80% !important;
+            width: auto !important;
+            flex-shrink: 0;
+            /* Center the SVG vertically and horizontally */
+        }
+
+        /* MAIN PATTERN AREA */
+        .main-design-wrapper {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .main-design-wrapper svg {
+            width: 100% !important;
+            max-width: 550px;
+            height: auto !important;
+        }
+
+        .section-label {
+            align-self: flex-start;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            text-align: center;
+        }
+
+        .floss-code {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            opacity: 0.8;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            #controls {
+                grid-template-columns: 1fr 1fr;
+            }
+
+
+            .preview-bar-wrapper {
+                height: 80px;
+            }
+
+            .preview-bar-wrapper svg {
+                height: 80% !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h2>Pattern Editor</h2>
+            <button class="btn-primary" onclick="colorGenerator()">Smart Palette</button>
+        </header>
+
+        <div id="controls">
+            <!-- Dynamic UI -->
+        </div>
+
+        <div class="preview-area" id="svgPreview">
+            {% if pattern %}
+            <div class="preview-bar-wrapper">
+                {{ preview|safe }}
+            </div>
+
+            <div class="main-design-wrapper">
+                {{ pattern|safe }}
+            </div>
+            {% else %}
+            <p style="color: var(--text-dim);">No design loaded.</p>
+            {% endif %}
+        </div>
+
+        <div id="hexCodesContainer" style="display: none;">
+            {% for hex in hex_codes %}
+            <span class="hex-value">{{ hex }}</span>
+            {% endfor %}
+        </div>
+        <div id="flossCodesContainer" style="display: none;">
+            {% for floss in floss_codes %}
+            <span class="floss-value">{{ floss }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function colorGenerator() {
+            const colorDif = document.getElementById('controls');
+            const colorCount = colorDif.childElementCount;
+            const svgs = document.querySelectorAll('#svgPreview svg');
+            const previewSvg = svgs.length > 0 ? svgs[0].outerHTML : "";
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/generate-colors/${colorCount}`;
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'preview_svg';
+            hiddenInput.value = previewSvg;
+            form.appendChild(hiddenInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function processSVG() {
+            const hexElements = document.querySelectorAll('#hexCodesContainer .hex-value');
+            const incomingHexCodes = Array.from(hexElements).map(el => el.textContent.trim());
+            const previewArea = document.getElementById('svgPreview');
+            const controls = document.getElementById('controls');
+            const svgs = previewArea.querySelectorAll('svg');
+            const flossElements = document.querySelectorAll('#flossCodesContainer .floss-value');
+            const incomingFlossCodes = Array.from(flossElements).map(el => el.textContent.trim());
+
+
+            if (svgs.length === 0) return;
+            controls.innerHTML = '';
+
+            let combinedStyleText = "";
+            svgs.forEach(s => {
+                const style = s.querySelector('style');
+                if (style) combinedStyleText += style.textContent;
+            });
+
+            const colorSuffixes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
+
+            colorSuffixes.forEach((suffix, index) => {
+                const hasMain = combinedStyleText.includes(`.s1-${suffix}`);
+                const hasPreview = combinedStyleText.includes(`.k-${suffix}`);
+
+                if (hasMain || hasPreview) {
+                    let svgOriginal = '#000000';
+                    if (hasMain) {
+                        const match = combinedStyleText.match(new RegExp(`\\.s1-${suffix}\\{stroke:([^}]+)\\}`, 'i'));
+                        if (match) svgOriginal = match[1].trim();
+                    } else {
+                        const match = combinedStyleText.match(new RegExp(`\\.k-${suffix}\\{fill:([^}]+)\\}`, 'i'));
+                        if (match) svgOriginal = match[1].trim();
+                    }
+
+                    let activeColor = (incomingHexCodes.length > index) ? incomingHexCodes[index] : svgOriginal;
+                    activeColor = convertToHex(activeColor);
+
+                    updateSVGColors(suffix, activeColor);
+
+                    const group = document.createElement('div');
+                    group.className = 'color-group';
+                    group.innerHTML = `
+    <label>
+        Color ${suffix.toUpperCase()}
+        <span class="floss-code">${incomingFlossCodes[index] || ''}</span>
+    </label>
+`;
+                    const inputRow = document.createElement('div');
+                    inputRow.className = 'input-row';
+
+                    const picker = document.createElement('input');
+                    picker.type = 'color';
+                    picker.value = activeColor;
+
+                    const textField = document.createElement('input');
+                    textField.type = 'text';
+                    textField.value = activeColor.toUpperCase();
+
+                    // Sync logic
+                    picker.addEventListener('input', (e) => {
+                        const color = e.target.value;
+                        textField.value = color.toUpperCase();
+                        updateSVGColors(suffix, color);
+                    });
+
+                    textField.addEventListener('input', (e) => {
+                        let color = e.target.value;
+                        if (!color.startsWith('#')) color = '#' + color;
+                        if (/(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)) {
+                            picker.value = color;
+                            updateSVGColors(suffix, color);
+                        }
+                    });
+
+                    inputRow.appendChild(picker);
+                    inputRow.appendChild(textField);
+                    group.appendChild(inputRow);
+                    controls.appendChild(group);
+                }
+            });
+        }
+
+        function updateSVGColors(suffix, newColor) {
+            const svgs = document.querySelectorAll('#svgPreview svg');
+            svgs.forEach(svg => {
+                const styles = svg.querySelectorAll('style');
+                styles.forEach(styleTag => {
+                    let css = styleTag.textContent;
+                    const strokeRegex = new RegExp(`(\\.s1-${suffix}\\{stroke:)([^}]+)(\\})`, 'g');
+                    const fillRegex = new RegExp(`(\\.kk-${suffix}\\{fill:)([^}]+)(\\})`, 'g');
+                    const previewKRegex = new RegExp(`(\\.k-${suffix}\\{fill:)([^}]+)(\\})`, 'g');
+                    const previewSRegex = new RegExp(`(\\.s-${suffix}\\{fill:)([^}]+)(\\})`, 'g');
+                    css = css.replace(strokeRegex, `$1${newColor}$3`)
+                        .replace(fillRegex, `$1${newColor}$3`)
+                        .replace(previewKRegex, `$1${newColor}$3`)
+                        .replace(previewSRegex, `$1${newColor}$3`);
+                    styleTag.textContent = css;
+                });
+            });
+        }
+
+        function convertToHex(color) {
+            const ctx = document.createElement('canvas').getContext('2d');
+            ctx.fillStyle = color;
+            return ctx.fillStyle;
+        }
+        function getNearestAllowedColor(targetColor) {
+
+            const target = chroma(targetColor);
+
+            let nearest = null;
+            let minDistance = Infinity;
+
+            allowedColorsArray.forEach(candidate => {
+
+                const dist = chroma.distance(
+                    target,
+                    chroma(candidate),
+                    'rgb'
+                );
+
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearest = candidate;
+                }
+            });
+
+            return nearest;
+        }
+        window.onload = processSVG;
+    </script>
+</body>
+
+</html>

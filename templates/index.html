@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Bracelet Color Studio</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        :root {
+            --bg: #0b0f1a;
+            --panel: #161b2a;
+            --accent: #60a5fa;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: #fff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Using dynamic viewport height for mobile browser toolbars */
+            min-height: 100dvh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .hero-container {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .design-card {
+            background: var(--panel);
+            /* Responsive padding: smaller on mobile, larger on desktop */
+            padding: clamp(30px, 8vw, 50px) clamp(20px, 5vw, 40px);
+            border-radius: 28px;
+            border: 1px solid #2d334a;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        .logo-mark {
+            width: 56px;
+            height: 56px;
+            background: var(--accent);
+            border-radius: 14px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 25px rgba(96, 165, 250, 0.4);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+            font-weight: 800;
+        }
+
+        p {
+            color: var(--text-dim);
+            font-size: 1rem;
+            margin-bottom: 35px;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            padding-left: 4px;
+            font-weight: 600;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            background: #1f263d;
+            border: 1px solid #3d445e;
+            color: #fff;
+            /* 16px font prevents iOS auto-zoom on focus */
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            appearance: none;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--accent);
+            background: #252d4a;
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
+        }
+
+        /* Hide number spinners for a cleaner look */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        button {
+            width: 100%;
+            background: var(--accent);
+            color: #0b0f1a;
+            border: none;
+            padding: 18px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active {
+            transform: scale(0.98);
+            background: #93c5fd;
+        }
+
+        /* Hover only applies to devices with a mouse */
+        @media (hover: hover) {
+            button:hover {
+                background: #93c5fd;
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px -5px rgba(96, 165, 250, 0.3);
+            }
+        }
+
+        .error-msg {
+            margin-top: 25px;
+            padding: 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hero-container">
+        <div class="design-card">
+            <div class="logo-mark">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+            </div>
+            <h1>✦ Bracelet Color Studio</h1>
+            <p>Enter a design ID to start your creative project</p>
+
+            <form id="designForm" method="POST" action="/submit-design">
+                <div class="input-group">
+                    <label for="design_number">Design Number</label>
+                    <input type="number" id="design_number" name="design_number" placeholder="e.g. 1024"
+                        inputmode="numeric" pattern="[0-9]*" required>
+                </div>
+                <button type="submit" id="submitDesign">Initialize Design</button>
+            </form>
+
+            {% if error %}
+            <div class="error-msg">
+                {{ error }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>

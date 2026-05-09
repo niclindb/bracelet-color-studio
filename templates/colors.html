@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bracelet Color Studio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        :root {
+            --bg: #0b0f1a;
+            --panel: #161b2a;
+            --panel-light: #1f263d;
+            --accent: #60a5fa;
+            --border: #2d334a;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: #fff;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* Compact & Mobile-Friendly Controls */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+            align-items: center;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            background: none;
+            flex-shrink: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border-radius: 10px;
+            border: 2px solid var(--border);
+        }
+
+        input[type="text"] {
+            background: var(--panel-light);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 1rem;
+            flex: 1;
+            min-width: 100px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: #0b0f1a;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .muzli-link {
+            flex-basis: 100%;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .muzli-link a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Results Styling */
+        .row {
+            margin-bottom: 40px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        h3 {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0;
+        }
+
+        .source-tag {
+            font-size: 0.7rem;
+            background: var(--accent);
+            padding: 6px 12px;
+            border-radius: 8px;
+            color: #0b0f1a;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        /* Palette Swatches */
+        .palette {
+            display: flex;
+            height: 80px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .swatch {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .swatch span {
+            font-family: monospace;
+            font-size: 0.6rem;
+            font-weight: bold;
+
+        }
+
+        .toggle-row {
+            flex-basis: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 5px;
+        }
+
+        .dmc-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: var(--panel-light);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .dmc-toggle:hover {
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .dmc-toggle input {
+            accent-color: var(--accent);
+            transform: scale(1.1);
+            cursor: pointer;
+        }
+
+        @media (min-width: 600px) {
+            .palette {
+                height: 120px;
+            }
+
+            .swatch span {
+                display: block;
+            }
+
+            .swatch:hover {
+                flex: 1.5;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="controls">
+            <input type="color" id="picker">
+            <input type="text" id="hexInput">
+            <button id="randomBtn">Shuffle</button>
+            <div class="toggle-row">
+                <label class="dmc-toggle">
+                    <input type="checkbox" id="dmcToggle">
+                    Use DMC colors only
+                </label>
+            </div>
+            <div class="muzli-link">
+                Inspired by <a href="https://colors.muz.li/" target="_blank">Muzli Colors</a>
+            </div>
+        </div>
+
+        <div id="outputs"></div>
+    </div>
+
+    <!-- Data Injection -->
+    <div id="config" data-num-colors="{{ num_colors | default(5) }}" style="display: none;"></div>
+    <div id="design_numer" data-design-number="{{ design_number }}" style="display: none;"></div>
+    <script>
+        const allowedColorsArray = JSON.parse('{{ colors | tojson  }}');
+
+        const picker = document.getElementById('picker');
+        const hexInput = document.getElementById('hexInput');
+        const randomBtn = document.getElementById('randomBtn');
+        const outputs = document.getElementById('outputs');
+
+        const configElement = document.getElementById('config');
+        const numColors = configElement ? parseInt(configElement.getAttribute('data-num-colors')) : 5;
+        function getNearestAllowedColor(targetColor) {
+
+            const target = chroma(targetColor);
+
+            let nearest = null;
+            let minDistance = Infinity;
+
+            allowedColorsArray.forEach(candidate => {
+
+                const dist = chroma.distance(
+                    target,
+                    chroma(candidate),
+                    'rgb'
+                );
+
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearest = candidate;
+                }
+            });
+
+            return nearest;
+        }
+
+        function getBalancedColor(base, hueShift) {
+            const lch = chroma(base).lch();
+            return chroma.lch(lch[0], lch[1], (lch[2] + hueShift) % 360).hex();
+        }
+
+        function generate() {
+            let hex = hexInput.value;
+            if (!chroma.valid(hex)) return;
+
+            outputs.innerHTML = '';
+            const base = chroma(hex);
+
+            const schemes = [
+                {
+                    name: 'Analogous',
+                    colors: Array.from({ length: numColors }, (_, i) => getBalancedColor(base, (45 / (numColors - 1 || 1)) * i))
+                },
+                {
+                    name: 'Monochromatic',
+                    colors: Array.from({ length: numColors }, (_, i) => {
+
+                        if (i === 0) return base.hex();
+
+                        const range = (i / (numColors - 1 || 1)) * 2 - 1;
+                        // -1 → +1
+
+                        return base.brighten(-range * 1.5).hex();
+                    })
+                },
+                {
+                    name: 'Triadic',
+                    colors: Array.from({ length: numColors }, (_, i) => getBalancedColor(base, (360 / 3) * i))
+                },
+                {
+                    name: 'Complementary',
+                    colors: Array.from({ length: numColors }, (_, i) => {
+                        const shift = (i % 2 === 0) ? 0 : 180;
+                        return getBalancedColor(base, shift + (i * 2));
+                    })
+                }
+            ];
+
+            const design_number = document.getElementById('design_numer').getAttribute('data-design-number');
+
+            schemes.forEach(scheme => {
+                //const allHexInPalette = scheme.colors.map(c => c.toUpperCase());
+                let useDMC = document.getElementById('dmcToggle').checked;
+
+                const allHexInPalette = scheme.colors.map(c => {
+                    if (!useDMC) return c.toUpperCase();
+                    return getNearestAllowedColor(c).toUpperCase();
+                });
+                const urlHexParam = allHexInPalette.map(h => h.replace('#', '')).join(',');
+                const link = `/design/${design_number}?hex_codes=${urlHexParam}`;
+
+                const row = document.createElement('div');
+                row.className = 'row';
+
+                row.innerHTML = `
+                    <div class="row-header">
+                        <h3>${scheme.name}</h3>
+                        <a href="${link}" class="source-tag">Apply</a>
+                    </div>
+                    <div class="preview-container"></div>
+                    <div class="palette"></div>
+                `;
+
+                // Handle Palette Swatches
+                const pDiv = row.querySelector('.palette');
+                allHexInPalette.forEach(cHex => {
+                    const swatch = document.createElement('div');
+                    swatch.className = 'swatch';
+                    swatch.style.backgroundColor = cHex;
+                    swatch.style.color = chroma(cHex).luminance() > 0.5 ? '#000' : '#fff';
+                    swatch.innerHTML = `<span>${cHex}</span>`;
+
+                    swatch.onclick = () => {
+                        navigator.clipboard.writeText(cHex);
+                        swatch.style.transform = "scale(0.9)";
+                        setTimeout(() => swatch.style.transform = "", 100);
+                    };
+                    pDiv.appendChild(swatch);
+                });
+
+                outputs.appendChild(row);
+            });
+        }
+
+        // Event Listeners
+        picker.oninput = (e) => {
+            hexInput.value = e.target.value.toUpperCase();
+            generate();
+        };
+
+        hexInput.oninput = (e) => {
+            let val = e.target.value;
+            if (!val.startsWith('#')) val = '#' + val;
+            val = '#' + val.replace(/#/g, '').toUpperCase();
+            e.target.value = val.toUpperCase();
+            if (chroma.valid(val) && val.length === 7) {
+                picker.value = chroma(val).hex();
+                generate();
+            }
+        };
+
+        randomBtn.onclick = () => {
+            const useDMC = document.getElementById('dmcToggle').checked;
+            let newColor = chroma.random().saturate(1.5).hex();
+
+            if (useDMC) {
+                // Snap to nearest allowed DMC color
+                newColor = getNearestAllowedColor(newColor);
+            }
+
+            picker.value = newColor.toUpperCase();
+            hexInput.value = newColor.toUpperCase();
+            generate();
+        };
+
+        // Initialize
+        window.onload = generate;
+    </script>
+</body>
+
+</html>
