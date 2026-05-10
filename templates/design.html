@@ -61,6 +61,7 @@
             border: 1px solid var(--border);
         }
 
+        /* ── Drag & Drop styles ── */
         .color-group {
             display: flex;
             flex-direction: column;
@@ -69,6 +70,41 @@
             padding: 10px;
             border-radius: 12px;
             border: 1px solid var(--border);
+            cursor: grab;
+            transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            user-select: none;
+            position: relative;
+        }
+
+        .color-group:active {
+            cursor: grabbing;
+        }
+
+        /* drag handle icon at top */
+        .color-group::before {
+            content: '⠿';
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: var(--text-dim);
+            opacity: 0.4;
+            pointer-events: none;
+            letter-spacing: -1px;
+        }
+
+        .color-group.dragging {
+            opacity: 0.35;
+            transform: scale(0.97);
+            box-shadow: none;
+            border-color: var(--accent);
+        }
+
+        .color-group.drag-over {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent);
+            transform: scale(1.03);
         }
 
         label {
@@ -77,6 +113,13 @@
             letter-spacing: 1px;
             color: var(--text-dim);
             margin-bottom: 8px;
+            margin-top: 10px;
+            /* push down below the drag handle */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            text-align: center;
         }
 
         .input-row {
@@ -147,7 +190,6 @@
         .preview-bar-wrapper {
             width: 100%;
             height: 90px;
-            /* Fixed height acts as the 'crop' */
             margin-bottom: 30px;
             background: rgba(0, 0, 0, 0.4);
             border-radius: 8px;
@@ -156,16 +198,13 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            /* Hides the extra parts of the zoomed SVG */
             position: relative;
         }
 
         .preview-bar-wrapper svg {
-            /* Forced Macro Zoom */
             height: 80% !important;
             width: auto !important;
             flex-shrink: 0;
-            /* Center the SVG vertically and horizontally */
         }
 
         /* MAIN PATTERN AREA */
@@ -193,14 +232,6 @@
             letter-spacing: 1px;
         }
 
-        label {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            text-align: center;
-        }
-
         .floss-code {
             font-size: 0.7rem;
             color: var(--text-dim);
@@ -216,7 +247,6 @@
             #controls {
                 grid-template-columns: 1fr 1fr;
             }
-
 
             .preview-bar-wrapper {
                 height: 80px;
@@ -268,6 +298,137 @@
     </div>
 
     <script>
+        // ─────────────────────────────────────────────
+        //  Drag-and-drop reorder
+        // ─────────────────────────────────────────────
+        let dragSrc = null;
+
+        function addDragHandlers(el) {
+            el.setAttribute('draggable', 'true');
+
+            el.addEventListener('dragstart', (e) => {
+                dragSrc = el;
+                el.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+                document.querySelectorAll('.color-group').forEach(g => g.classList.remove('drag-over'));
+                dragSrc = null;
+            });
+
+            el.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragSrc && dragSrc !== el) {
+                    el.classList.add('drag-over');
+                }
+            });
+
+            el.addEventListener('dragleave', () => {
+                el.classList.remove('drag-over');
+            });
+
+            el.addEventListener('drop', (e) => {
+                e.preventDefault();
+                el.classList.remove('drag-over');
+                if (!dragSrc || dragSrc === el) return;
+
+                // Swap the two color-groups in the DOM
+                const controls = document.getElementById('controls');
+                const groups = [...controls.querySelectorAll('.color-group')];
+                const srcIdx = groups.indexOf(dragSrc);
+                const tgtIdx = groups.indexOf(el);
+
+                if (srcIdx === -1 || tgtIdx === -1) return;
+
+                // Swap DOM positions
+                if (srcIdx < tgtIdx) {
+                    controls.insertBefore(dragSrc, el.nextSibling);
+                } else {
+                    controls.insertBefore(dragSrc, el);
+                }
+
+                // After swap, re-read every group's current color and re-apply
+                // using its suffix so the SVG stays consistent.
+                // Because we're only reordering the UI slots, we need to swap
+                // the actual suffix assignments so the SVG colors move too.
+                swapSuffixColors(srcIdx, tgtIdx);
+            });
+        }
+
+        // Swap the suffix bindings between two positions so the SVG updates
+        function swapSuffixColors(idxA, idxB) {
+            const controls = document.getElementById('controls');
+            const groups = [...controls.querySelectorAll('.color-group')];
+
+            // After the DOM swap the groups array is already re-ordered,
+            // so we just need to reassign each group's suffix to match its
+            // new visual position, then repaint everything.
+            rebindAllSuffixes();
+        }
+
+        // Walk every color-group in current DOM order, reassign their suffix
+        // data attribute, update label, and repaint the SVG.
+        function rebindAllSuffixes() {
+            const colorSuffixes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
+            const controls = document.getElementById('controls');
+            const groups = [...controls.querySelectorAll('.color-group')];
+
+            groups.forEach((group, i) => {
+                const newSuffix = colorSuffixes[i];
+                const oldSuffix = group.dataset.suffix;
+                const currentColor = group.querySelector('input[type="color"]').value;
+
+                // Update stored suffix
+                group.dataset.suffix = newSuffix;
+
+                // Update the label text (Color A, Color B …)
+                const labelEl = group.querySelector('label');
+                if (labelEl) {
+                    const flossSpan = labelEl.querySelector('.floss-code');
+                    const flossText = flossSpan ? flossSpan.outerHTML : '';
+                    labelEl.innerHTML = `Color ${newSuffix.toUpperCase()} ${flossText}`;
+                }
+
+                // Rewire the picker/text events to use the new suffix
+                const picker = group.querySelector('input[type="color"]');
+                const textField = group.querySelector('input[type="text"]');
+
+                // Remove old listeners by cloning
+                const newPicker = picker.cloneNode(true);
+                const newText = textField.cloneNode(true);
+                picker.replaceWith(newPicker);
+                textField.replaceWith(newText);
+
+                bindInputEvents(group, newSuffix, newPicker, newText);
+
+                // Push this group's color to its new suffix slot in the SVG
+                updateSVGColors(newSuffix, currentColor);
+            });
+        }
+
+        function bindInputEvents(group, suffix, picker, textField) {
+            picker.addEventListener('input', (e) => {
+                const color = e.target.value;
+                textField.value = color.toUpperCase();
+                updateSVGColors(suffix, color);
+            });
+
+            textField.addEventListener('input', (e) => {
+                let color = e.target.value;
+                if (!color.startsWith('#')) color = '#' + color;
+                if (/(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)) {
+                    picker.value = color;
+                    updateSVGColors(suffix, color);
+                }
+            });
+        }
+
+        // ─────────────────────────────────────────────
+        //  Original functions (unchanged logic)
+        // ─────────────────────────────────────────────
         function colorGenerator() {
             const colorDif = document.getElementById('controls');
             const colorCount = colorDif.childElementCount;
@@ -294,7 +455,6 @@
             const svgs = previewArea.querySelectorAll('svg');
             const flossElements = document.querySelectorAll('#flossCodesContainer .floss-value');
             const incomingFlossCodes = Array.from(flossElements).map(el => el.textContent.trim());
-
 
             if (svgs.length === 0) return;
             controls.innerHTML = '';
@@ -328,12 +488,15 @@
 
                     const group = document.createElement('div');
                     group.className = 'color-group';
-                    group.innerHTML = `
-    <label>
-        Color ${suffix.toUpperCase()}
-        <span class="floss-code">${incomingFlossCodes[index] || ''}</span>
-    </label>
-`;
+                    group.dataset.suffix = suffix; // store for drag-drop rebinding
+
+                    const labelEl = document.createElement('label');
+                    const flossSpan = incomingFlossCodes[index]
+                        ? `<span class="floss-code">${incomingFlossCodes[index]}</span>`
+                        : '';
+                    labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossSpan}`;
+                    group.appendChild(labelEl);
+
                     const inputRow = document.createElement('div');
                     inputRow.className = 'input-row';
 
@@ -345,26 +508,15 @@
                     textField.type = 'text';
                     textField.value = activeColor.toUpperCase();
 
-                    // Sync logic
-                    picker.addEventListener('input', (e) => {
-                        const color = e.target.value;
-                        textField.value = color.toUpperCase();
-                        updateSVGColors(suffix, color);
-                    });
-
-                    textField.addEventListener('input', (e) => {
-                        let color = e.target.value;
-                        if (!color.startsWith('#')) color = '#' + color;
-                        if (/(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)) {
-                            picker.value = color;
-                            updateSVGColors(suffix, color);
-                        }
-                    });
+                    bindInputEvents(group, suffix, picker, textField);
 
                     inputRow.appendChild(picker);
                     inputRow.appendChild(textField);
                     group.appendChild(inputRow);
                     controls.appendChild(group);
+
+                    // Attach drag handlers
+                    addDragHandlers(group);
                 }
             });
         }
@@ -393,29 +545,7 @@
             ctx.fillStyle = color;
             return ctx.fillStyle;
         }
-        function getNearestAllowedColor(targetColor) {
 
-            const target = chroma(targetColor);
-
-            let nearest = null;
-            let minDistance = Infinity;
-
-            allowedColorsArray.forEach(candidate => {
-
-                const dist = chroma.distance(
-                    target,
-                    chroma(candidate),
-                    'rgb'
-                );
-
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    nearest = candidate;
-                }
-            });
-
-            return nearest;
-        }
         window.onload = processSVG;
     </script>
 </body>
