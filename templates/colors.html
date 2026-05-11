@@ -313,7 +313,7 @@
 
         <div class="controls">
             <input type="color" id="picker">
-            <input type="text" id="hexInput" placeholder="#FF6B6B">
+            <input type="text" id="hexInput" placeholder="">
             <button id="randomBtn">Shuffle</button>
 
             <div class="filter-tabs" id="filterTabs">
@@ -559,21 +559,6 @@
                 colors(base, n) {
                     const steps = lchRange(base, '#111111', n + 1);
                     return [base, ...steps.slice(1, n)];
-                }
-            },
-            {
-                name: 'Muted / Dusty',
-                category: 'tone',
-                colors(base, n) {
-                    const [l, c, h] = chroma(base).lch();
-                    const mutedBase = chroma.lch(l, Math.min(c * 0.35, 18), h || 0).hex();
-                    return [
-                        base,
-                        ...symmetricAnalogous(mutedBase, n - 1, 50).map(col => {
-                            const [cl, cc, ch] = chroma(col).lch();
-                            return chroma.lch(cl, Math.min(cc * 0.35, 18), ch || 0).hex();
-                        })
-                    ];
                 }
             },
 
