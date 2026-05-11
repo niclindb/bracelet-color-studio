@@ -1,5 +1,3 @@
-from turtle import color
-
 from flask import Flask, redirect, render_template as template, request
 import requests
 import re
