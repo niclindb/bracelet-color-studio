@@ -74,11 +74,11 @@
             position: relative;
             transition: box-shadow 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s;
             cursor: grab;
-            /* Prevent browser selection highlights */
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
-            /* Allow vertical scrolling, but let JS handle horizontal/drag */
+            -webkit-overflow-scrolling: auto;
+            touch-action: none !important;
         }
 
         .color-group:active {
@@ -314,6 +314,8 @@
                 // Ignore if clicking inputs
                 if (e.target.tagName.toLowerCase() === 'input') return;
                 if (e.button !== 0 && e.button !== undefined) return;
+
+                e.preventDefault();
 
                 drag.srcEl = card;
                 drag.startX = e.clientX;
