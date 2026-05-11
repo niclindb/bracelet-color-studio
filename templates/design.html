@@ -62,37 +62,28 @@
             position: relative;
         }
 
+        /* ── Drag & Drop Logic ── */
         .color-group {
             display: flex;
             flex-direction: column;
             align-items: center;
             background: var(--panel-light);
-            padding: 10px;
+            padding: 16px 10px;
             border-radius: 12px;
             border: 1px solid var(--border);
             position: relative;
             transition: box-shadow 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s;
+            cursor: grab;
+            /* Prevent browser selection highlights */
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
+            /* Allow vertical scrolling, but let JS handle horizontal/drag */
+            touch-action: pan-y;
         }
 
-        /* Drag handle */
-        .drag-handle {
-            width: 36px;
-            height: 10px;
-            border-radius: 3px;
-            background: var(--border);
-            margin-bottom: 10px;
-            cursor: grab;
-            flex-shrink: 0;
-            transition: background 0.15s;
-            touch-action: none;
-            /* critical: hands all touch to JS */
-        }
-
-        .color-group:hover .drag-handle {
-            background: var(--accent);
+        .color-group:active {
+            cursor: grabbing;
         }
 
         /* Source card dims while dragging */
@@ -109,7 +100,7 @@
             transform: scale(1.04);
         }
 
-        /* Floating ghost that follows the finger */
+        /* Ghost element follows pointer */
         #drag-ghost {
             position: fixed;
             pointer-events: none;
@@ -140,17 +131,20 @@
             color: var(--text-dim);
         }
 
+        /* ── Form Elements ── */
         label {
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-dim);
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 2px;
             text-align: center;
+            pointer-events: none;
+            /* Let clicks pass to the card for dragging */
         }
 
         .input-row {
@@ -189,6 +183,9 @@
             font-size: 11px;
             text-align: center;
             outline: none;
+            cursor: text;
+            user-select: text;
+            /* Allow text interaction inside the box */
         }
 
         .btn-primary {
@@ -203,6 +200,7 @@
             text-transform: uppercase;
         }
 
+        /* ── Preview Area ── */
         .preview-area {
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             border-radius: 24px;
@@ -233,16 +231,6 @@
         .preview-bar-wrapper svg {
             height: 80% !important;
             width: auto !important;
-            flex-shrink: 0;
-        }
-
-        .main-design-wrapper {
-            width: 100%;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
         }
 
         .main-design-wrapper svg {
@@ -269,10 +257,6 @@
 
             .preview-bar-wrapper {
                 height: 80px;
-            }
-
-            .preview-bar-wrapper svg {
-                height: 80% !important;
             }
         }
     </style>
@@ -305,52 +289,42 @@
         </div>
     </div>
 
-    <!-- Ghost card that floats under finger/cursor while dragging -->
     <div id="drag-ghost">
         <div class="ghost-swatch" id="ghost-swatch"></div>
         <div class="ghost-label" id="ghost-label"></div>
     </div>
 
     <script>
-        // ─────────────────────────────────────────────────────────────
-        //  Constants
-        // ─────────────────────────────────────────────────────────────
         const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
-
-        // ─────────────────────────────────────────────────────────────
-        //  Pointer-based drag (iOS Safari, Android, Desktop)
-        // ─────────────────────────────────────────────────────────────
         const ghost = document.getElementById('drag-ghost');
         const ghostSwatch = document.getElementById('ghost-swatch');
         const ghostLabel = document.getElementById('ghost-label');
 
         let drag = {
-            active: false,   // ghost is visible and moving
-            srcEl: null,    // card being dragged
-            overEl: null,    // card currently hovered
+            active: false,
+            srcEl: null,
+            overEl: null,
             startX: 0,
             startY: 0,
-            offsetX: 0,       // pointer offset inside the card
+            offsetX: 0,
             offsetY: 0,
         };
 
         function initDrag(card) {
-            const handle = card.querySelector('.drag-handle');
-
-            handle.addEventListener('pointerdown', (e) => {
+            card.addEventListener('pointerdown', (e) => {
+                // Ignore if clicking inputs
+                if (e.target.tagName.toLowerCase() === 'input') return;
                 if (e.button !== 0 && e.button !== undefined) return;
-                e.preventDefault();
 
                 drag.srcEl = card;
                 drag.startX = e.clientX;
                 drag.startY = e.clientY;
                 drag.active = false;
 
-                // Capture so pointermove fires even when finger leaves the handle
-                handle.setPointerCapture(e.pointerId);
-                handle.addEventListener('pointermove', onMove);
-                handle.addEventListener('pointerup', onUp);
-                handle.addEventListener('pointercancel', onUp);
+                card.setPointerCapture(e.pointerId);
+                card.addEventListener('pointermove', onMove);
+                card.addEventListener('pointerup', onUp);
+                card.addEventListener('pointercancel', onUp);
             });
         }
 
@@ -358,17 +332,17 @@
             const dx = e.clientX - drag.startX;
             const dy = e.clientY - drag.startY;
 
-            // Wait until the user has moved at least 6px before activating drag
             if (!drag.active) {
-                if (Math.hypot(dx, dy) < 6) return;
+                if (Math.hypot(dx, dy) < 8) return;
 
-                // Activate
+                // Start drag: Blur keyboard if open
+                if (document.activeElement) document.activeElement.blur();
+
                 drag.active = true;
                 const rect = drag.srcEl.getBoundingClientRect();
                 drag.offsetX = drag.startX - rect.left;
                 drag.offsetY = drag.startY - rect.top;
 
-                // Style ghost
                 const picker = drag.srcEl.querySelector('input[type="color"]');
                 ghostSwatch.style.background = picker ? picker.value : '#888';
                 ghostLabel.textContent = 'Color ' + (drag.srcEl.dataset.suffix || '').toUpperCase();
@@ -376,15 +350,12 @@
                 ghost.style.display = 'flex';
 
                 drag.srcEl.classList.add('is-placeholder');
-                document.body.style.overflow = 'hidden'; // lock page scroll
+                document.body.style.overflow = 'hidden';
             }
 
-            // Move ghost to follow finger/cursor
             ghost.style.left = (e.clientX - drag.offsetX) + 'px';
             ghost.style.top = (e.clientY - drag.offsetY) + 'px';
 
-            // Hit-test: find which card is under the pointer
-            // Temporarily hide ghost so it doesn't block elementFromPoint
             ghost.style.display = 'none';
             const elBelow = document.elementFromPoint(e.clientX, e.clientY);
             ghost.style.display = 'flex';
@@ -403,18 +374,16 @@
         }
 
         function onUp(e) {
-            const handle = e.currentTarget;
-            handle.removeEventListener('pointermove', onMove);
-            handle.removeEventListener('pointerup', onUp);
-            handle.removeEventListener('pointercancel', onUp);
+            const card = e.currentTarget;
+            card.removeEventListener('pointermove', onMove);
+            card.removeEventListener('pointerup', onUp);
+            card.removeEventListener('pointercancel', onUp);
 
-            // Clean up visual states
             ghost.style.display = 'none';
             document.body.style.overflow = '';
             if (drag.srcEl) drag.srcEl.classList.remove('is-placeholder');
             if (drag.overEl) drag.overEl.classList.remove('drag-over');
 
-            // Perform the swap
             if (drag.active && drag.overEl && drag.overEl !== drag.srcEl) {
                 swapCards(drag.srcEl, drag.overEl);
             }
@@ -424,11 +393,7 @@
             drag.overEl = null;
         }
 
-        // ─────────────────────────────────────────────────────────────
-        //  Swap two cards in the DOM then rebind suffix → SVG mapping
-        // ─────────────────────────────────────────────────────────────
         function swapCards(a, b) {
-            // Use a comment node as a temporary placeholder
             const marker = document.createComment('');
             a.replaceWith(marker);
             b.replaceWith(a);
@@ -441,10 +406,8 @@
             cards.forEach((card, i) => {
                 const suffix = COLOR_SUFFIXES[i];
                 const currentColor = card.querySelector('input[type="color"]').value;
-
                 card.dataset.suffix = suffix;
 
-                // Update label text
                 const labelEl = card.querySelector('label');
                 if (labelEl) {
                     const flossSpan = labelEl.querySelector('.floss-code');
@@ -452,23 +415,18 @@
                     labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossHTML}`;
                 }
 
-                // Clone inputs to drop stale event listeners, then rebind
                 const picker = card.querySelector('input[type="color"]');
                 const textField = card.querySelector('input[type="text"]');
                 const newPicker = picker.cloneNode(true);
                 const newText = textField.cloneNode(true);
                 picker.replaceWith(newPicker);
                 textField.replaceWith(newText);
-                bindInputEvents(card, suffix, newPicker, newText);
 
-                // Apply this card's color to its new suffix slot in the SVG
+                bindInputEvents(card, suffix, newPicker, newText);
                 updateSVGColors(suffix, currentColor);
             });
         }
 
-        // ─────────────────────────────────────────────────────────────
-        //  Input ↔ SVG sync
-        // ─────────────────────────────────────────────────────────────
         function bindInputEvents(card, suffix, picker, textField) {
             picker.addEventListener('input', (e) => {
                 const color = e.target.value;
@@ -484,27 +442,6 @@
                     updateSVGColors(suffix, color);
                 }
             });
-        }
-
-        // ─────────────────────────────────────────────────────────────
-        //  Original app functions (unchanged)
-        // ─────────────────────────────────────────────────────────────
-        function colorGenerator() {
-            const controls = document.getElementById('controls');
-            const colorCount = controls.childElementCount;
-            const svgs = document.querySelectorAll('#svgPreview svg');
-            const previewSvg = svgs.length > 0 ? svgs[0].outerHTML : '';
-
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/generate-colors/${colorCount}`;
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'preview_svg';
-            hiddenInput.value = previewSvg;
-            form.appendChild(hiddenInput);
-            document.body.appendChild(form);
-            form.submit();
         }
 
         function processSVG() {
@@ -544,19 +481,12 @@
                 activeColor = convertToHex(activeColor);
                 updateSVGColors(suffix, activeColor);
 
-                // ── Build card ──
                 const card = document.createElement('div');
                 card.className = 'color-group';
                 card.dataset.suffix = suffix;
 
-                const handle = document.createElement('div');
-                handle.className = 'drag-handle';
-                card.appendChild(handle);
-
                 const labelEl = document.createElement('label');
-                const flossHTML = incomingFlossCodes[index]
-                    ? `<span class="floss-code">${incomingFlossCodes[index]}</span>`
-                    : '';
+                const flossHTML = incomingFlossCodes[index] ? `<span class="floss-code">${incomingFlossCodes[index]}</span>` : '';
                 labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossHTML}`;
                 card.appendChild(labelEl);
 
@@ -599,6 +529,24 @@
             const ctx = document.createElement('canvas').getContext('2d');
             ctx.fillStyle = color;
             return ctx.fillStyle;
+        }
+
+        function colorGenerator() {
+            const controls = document.getElementById('controls');
+            const colorCount = controls.childElementCount;
+            const svgs = document.querySelectorAll('#svgPreview svg');
+            const previewSvg = svgs.length > 0 ? svgs[0].outerHTML : '';
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/generate-colors/${colorCount}`;
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'preview_svg';
+            hiddenInput.value = previewSvg;
+            form.appendChild(hiddenInput);
+            document.body.appendChild(form);
+            form.submit();
         }
 
         window.onload = processSVG;
