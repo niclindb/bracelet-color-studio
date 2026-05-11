@@ -72,12 +72,15 @@
             border: 1px solid var(--border);
             position: relative;
             transition: box-shadow 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         /* Drag handle */
         .drag-handle {
             width: 36px;
-            height: 5px;
+            height: 10px;
             border-radius: 3px;
             background: var(--border);
             margin-bottom: 10px;
