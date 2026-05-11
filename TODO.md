@@ -1,3 +1,2 @@
-1. add previews to colors.html
-2. be able to rotate colors
+1. floss or hex look up
 

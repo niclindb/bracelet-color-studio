@@ -1,3 +1,5 @@
+from turtle import color
+
 from flask import Flask, redirect, render_template as template, request
 import requests
 import re
@@ -59,5 +61,5 @@ def colors(num_colors=None):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
     
