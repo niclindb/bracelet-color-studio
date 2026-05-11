@@ -17,6 +17,10 @@
             --text-dim: #94a3b8;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg);
@@ -33,7 +37,7 @@
             max-width: 800px;
         }
 
-        /* Compact & Mobile-Friendly Controls */
+        /* ── Sticky controls ── */
         .controls {
             display: flex;
             flex-wrap: wrap;
@@ -41,7 +45,7 @@
             background: var(--panel);
             padding: 15px;
             border-radius: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border: 1px solid var(--border);
             align-items: center;
             position: sticky;
@@ -94,94 +98,45 @@
             letter-spacing: 1px;
         }
 
-        .muzli-link {
+        /* ── Category filter tabs ── */
+        .filter-tabs {
             flex-basis: 100%;
-            font-size: 11px;
-            color: var(--text-dim);
-            text-align: center;
-            margin-top: 5px;
-        }
-
-        .muzli-link a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-        /* Results Styling */
-        .row {
-            margin-bottom: 40px;
-            animation: fadeIn 0.4s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .row-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
         }
 
-        h3 {
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin: 0;
-        }
-
-        .source-tag {
-            font-size: 0.7rem;
-            background: var(--accent);
-            padding: 6px 12px;
-            border-radius: 8px;
-            color: #0b0f1a;
-            text-decoration: none;
-            font-weight: 700;
-        }
-
-        /* Palette Swatches */
-        .palette {
-            display: flex;
-            height: 80px;
-            border-radius: 15px;
-            overflow: hidden;
+        .filter-tab {
+            padding: 5px 12px;
+            border-radius: 20px;
             border: 1px solid var(--border);
-        }
-
-        .swatch {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
+            transition: all 0.15s;
         }
 
-        .swatch span {
-            font-family: monospace;
-            font-size: 0.6rem;
-            font-weight: bold;
+        .filter-tab:hover {
+            border-color: var(--accent);
+            color: #fff;
+        }
 
+        .filter-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #0b0f1a;
         }
 
         .toggle-row {
             flex-basis: 100%;
             display: flex;
             justify-content: center;
-            margin-top: 5px;
+            margin-top: 2px;
         }
 
         .dmc-toggle {
@@ -195,7 +150,7 @@
             color: var(--text-dim);
             font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
             user-select: none;
         }
 
@@ -210,35 +165,173 @@
             cursor: pointer;
         }
 
+        .muzli-link {
+            flex-basis: 100%;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        .muzli-link a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* ── Category groups ── */
+        .category-group {
+            margin-bottom: 10px;
+        }
+
+        .category-header {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 6px 4px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 14px;
+            opacity: 0.7;
+        }
+
+        /* ── Scheme row ── */
+        .row {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+
+        .scheme-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .scheme-note {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .source-tag {
+            font-size: 0.7rem;
+            background: var(--accent);
+            padding: 6px 14px;
+            border-radius: 8px;
+            color: #0b0f1a;
+            text-decoration: none;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ── Palette swatches ── */
+        .palette {
+            display: flex;
+            height: 70px;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .swatch {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            cursor: pointer;
+            transition: flex 0.25s ease;
+            padding-bottom: 6px;
+            position: relative;
+        }
+
+        .swatch span {
+            font-family: monospace;
+            font-size: 0.58rem;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.15s;
+            pointer-events: none;
+        }
+
+        .swatch:hover {
+            flex: 1.8;
+        }
+
+        .swatch:hover span {
+            opacity: 1;
+        }
+
+        .dmc-warn {
+            font-size: 0.6rem;
+            background: #f59e0b22;
+            border: 1px solid #f59e0b66;
+            color: #f59e0b;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
         @media (min-width: 600px) {
             .palette {
-                height: 120px;
-            }
-
-            .swatch span {
-                display: block;
-            }
-
-            .swatch:hover {
-                flex: 1.5;
+                height: 100px;
             }
         }
     </style>
 </head>
 
 <body>
-
     <div class="container">
+
         <div class="controls">
             <input type="color" id="picker">
-            <input type="text" id="hexInput">
+            <input type="text" id="hexInput" placeholder="#FF6B6B">
             <button id="randomBtn">Shuffle</button>
+
+            <div class="filter-tabs" id="filterTabs">
+                <button class="filter-tab active" data-cat="all">All</button>
+                <button class="filter-tab" data-cat="harmony">Harmony</button>
+                <button class="filter-tab" data-cat="tone">Tone</button>
+                <button class="filter-tab" data-cat="temperature">Temperature</button>
+                <button class="filter-tab" data-cat="gradient">Gradient</button>
+                <button class="filter-tab" data-cat="perceptual">Perceptual</button>
+            </div>
+
             <div class="toggle-row">
                 <label class="dmc-toggle">
                     <input type="checkbox" id="dmcToggle">
                     Use DMC colors only
                 </label>
             </div>
+
             <div class="muzli-link">
                 Inspired by <a href="https://colors.muz.li/" target="_blank">Muzli Colors</a>
             </div>
@@ -247,132 +340,498 @@
         <div id="outputs"></div>
     </div>
 
-    <!-- Data Injection -->
-    <div id="config" data-num-colors="{{ num_colors | default(5) }}" style="display: none;"></div>
-    <div id="design_numer" data-design-number="{{ design_number }}" style="display: none;"></div>
+    <div id="config" data-num-colors="{{ num_colors | default(5) }}" style="display:none;"></div>
+    <div id="design_numer" data-design-number="{{ design_number }}" style="display:none;"></div>
+
     <script>
-        const allowedColorsArray = JSON.parse('{{ colors | tojson  }}');
+        const allowedColorsArray = JSON.parse('{{ colors | tojson }}');
 
         const picker = document.getElementById('picker');
         const hexInput = document.getElementById('hexInput');
         const randomBtn = document.getElementById('randomBtn');
         const outputs = document.getElementById('outputs');
+        const numColors = parseInt(document.getElementById('config').getAttribute('data-num-colors')) || 5;
 
-        const configElement = document.getElementById('config');
-        const numColors = configElement ? parseInt(configElement.getAttribute('data-num-colors')) : 5;
-        function getNearestAllowedColor(targetColor) {
+        let activeCategory = 'all';
 
+        // ─────────────────────────────────────────────────────────────
+        //  DMC helpers
+        // ─────────────────────────────────────────────────────────────
+        function getNearestAllowedColor(targetColor, exclude = []) {
             const target = chroma(targetColor);
+            let nearest = null, minDist = Infinity;
+            allowedColorsArray.forEach(c => {
+                if (exclude.includes(c.toUpperCase())) return;
+                const dist = chroma.distance(target, chroma(c), 'rgb');
+                if (dist < minDist) { minDist = dist; nearest = c; }
+            });
+            return nearest || allowedColorsArray[0];
+        }
 
-            let nearest = null;
-            let minDistance = Infinity;
+        // Snap full palette to DMC with de-duplication.
+        // The base color slot (index 0) is snapped first and locked,
+        // then remaining slots find their nearest unique DMC color.
+        function snapToDMC(hexArray) {
+            const used = [];
+            return hexArray.map(h => {
+                const snapped = getNearestAllowedColor(h, used).toUpperCase();
+                used.push(snapped);
+                return snapped;
+            });
+        }
 
-            allowedColorsArray.forEach(candidate => {
+        // ─────────────────────────────────────────────────────────────
+        //  Core color math
+        // ─────────────────────────────────────────────────────────────
+        function rotateHue(base, degrees) {
+            const [l, c, h] = chroma(base).lch();
+            return chroma.lch(l, c, ((h || 0) + degrees + 360) % 360).hex();
+        }
 
-                const dist = chroma.distance(
-                    target,
-                    chroma(candidate),
-                    'rgb'
-                );
+        function lchRange(from, to, n) {
+            return chroma.scale([from, to]).mode('lch').colors(n);
+        }
 
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    nearest = candidate;
-                }
+        function evenHueSpread(base, n) {
+            return Array.from({ length: n }, (_, i) => rotateHue(base, (360 / n) * i));
+        }
+
+        function fixChroma(hex, targetC) {
+            const [l, , h] = chroma(hex).lch();
+            return chroma.lch(l, targetC, h || 0).hex();
+        }
+
+        // Spread n-1 colors symmetrically around base, then prepend base
+        function symmetricAnalogous(base, n, spread = 60) {
+            if (n === 1) return [base];
+            const rest = n - 1;
+            return [
+                base,
+                ...Array.from({ length: rest }, (_, i) => {
+                    const t = rest === 1 ? 1 : (i / (rest - 1)) * 2 - 1; // -1..+1 excluding 0
+                    // Skip exactly 0 to avoid duplicating base
+                    const tAdj = t === 0 ? 1 / rest : t;
+                    return rotateHue(base, tAdj * spread);
+                })
+            ];
+        }
+
+        // Given anchor colors, interpolate to exactly n colors.
+        // ALWAYS keeps base (anchors[0]) as the first color.
+        function interpolateAnchors(anchors, n) {
+            if (n === 1) return [anchors[0]];
+            if (n <= anchors.length) return anchors.slice(0, n);
+
+            const result = [];
+            const segments = anchors.length - 1;
+            const perSeg = Math.floor((n - 1) / segments);
+            let remainder = (n - 1) - perSeg * segments;
+
+            for (let s = 0; s < segments; s++) {
+                const count = perSeg + (remainder-- > 0 ? 1 : 0);
+                // count+1 so we can drop the last point (it becomes start of next seg)
+                const seg = chroma.scale([anchors[s], anchors[s + 1]]).mode('lch').colors(count + 1);
+                result.push(...seg.slice(0, count));
+            }
+            result.push(anchors[anchors.length - 1]);
+            return result.slice(0, n);
+        }
+
+        // Build a gradient that starts AT the base color and journeys through waypoints
+        function anchoredGradient(base, waypoints, n) {
+            // Find the waypoint closest in hue to base, use it as the "entry" point
+            const [, , baseH] = chroma(base).lch();
+            let closest = 0, minDist = Infinity;
+            waypoints.forEach((w, i) => {
+                const [, , wH] = chroma(w).lch();
+                const d = Math.min(Math.abs(baseH - wH), 360 - Math.abs(baseH - wH));
+                if (d < minDist) { minDist = d; closest = i; }
             });
 
-            return nearest;
+            // Rotate waypoints so closest is first, then replace it with the exact base
+            const rotated = [...waypoints.slice(closest), ...waypoints.slice(0, closest)];
+            rotated[0] = base;
+
+            return interpolateAnchors(rotated, n);
         }
 
-        function getBalancedColor(base, hueShift) {
-            const lch = chroma(base).lch();
-            return chroma.lch(lch[0], lch[1], (lch[2] + hueShift) % 360).hex();
-        }
+        // ─────────────────────────────────────────────────────────────
+        //  Scheme definitions — index 0 is ALWAYS the base color
+        // ─────────────────────────────────────────────────────────────
+        const SCHEMES = [
 
+            // ── HARMONY ──────────────────────────────────────────────
+            {
+                name: 'Analogous',
+                category: 'harmony',
+                colors(base, n) {
+                    return symmetricAnalogous(base, n, 60);
+                }
+            },
+            {
+                name: 'Complementary',
+                category: 'harmony',
+                colors(base, n) {
+                    if (n === 1) return [base];
+                    const complement = rotateHue(base, 180);
+                    return interpolateAnchors([base, complement], n);
+                }
+            },
+            {
+                name: 'Split-Complementary',
+                category: 'harmony',
+                colors(base, n) {
+                    return interpolateAnchors([
+                        base,
+                        rotateHue(base, 150),
+                        rotateHue(base, 210)
+                    ], n);
+                }
+            },
+            {
+                name: 'Triadic',
+                category: 'harmony',
+                colors(base, n) {
+                    return interpolateAnchors([
+                        base,
+                        rotateHue(base, 120),
+                        rotateHue(base, 240)
+                    ], n);
+                }
+            },
+            {
+                name: 'Tetradic / Square',
+                category: 'harmony',
+                colors(base, n) {
+                    return interpolateAnchors([
+                        base,
+                        rotateHue(base, 90),
+                        rotateHue(base, 180),
+                        rotateHue(base, 270)
+                    ], n);
+                }
+            },
+            {
+                name: 'Double Split-Complementary',
+                category: 'harmony',
+                colors(base, n) {
+                    return interpolateAnchors([
+                        base,
+                        rotateHue(base, 30),
+                        rotateHue(base, 150),
+                        rotateHue(base, 180),
+                        rotateHue(base, 210),
+                        rotateHue(base, 330),
+                    ], n);
+                }
+            },
+
+            // ── TONE ─────────────────────────────────────────────────
+            {
+                name: 'Monochromatic',
+                category: 'tone',
+                colors(base, n) {
+                    const [, c, h] = chroma(base).lch();
+                    const baseLch = chroma(base).lch();
+                    // Spread lightness around the base value
+                    return [
+                        base,
+                        ...Array.from({ length: n - 1 }, (_, i) => {
+                            const l = 15 + ((i + 1) / n) * 70;
+                            // skip a step if it would reproduce the base lightness
+                            return chroma.lch(l, c * 0.9, h || 0).hex();
+                        })
+                    ];
+                }
+            },
+            {
+                name: 'Tinted (toward white)',
+                category: 'tone',
+                colors(base, n) {
+                    // base is always first, rest go toward white
+                    const steps = lchRange(base, '#ffffff', n + 1);
+                    return [base, ...steps.slice(1, n)];
+                }
+            },
+            {
+                name: 'Shadowed (toward black)',
+                category: 'tone',
+                colors(base, n) {
+                    const steps = lchRange(base, '#111111', n + 1);
+                    return [base, ...steps.slice(1, n)];
+                }
+            },
+            {
+                name: 'Muted / Dusty',
+                category: 'tone',
+                colors(base, n) {
+                    const [l, c, h] = chroma(base).lch();
+                    const mutedBase = chroma.lch(l, Math.min(c * 0.35, 18), h || 0).hex();
+                    return [
+                        base,
+                        ...symmetricAnalogous(mutedBase, n - 1, 50).map(col => {
+                            const [cl, cc, ch] = chroma(col).lch();
+                            return chroma.lch(cl, Math.min(cc * 0.35, 18), ch || 0).hex();
+                        })
+                    ];
+                }
+            },
+
+            // ── TEMPERATURE ──────────────────────────────────────────
+            {
+                name: 'Warm',
+                category: 'temperature',
+                colors(base, n) {
+                    const [l, c] = chroma(base).lch();
+                    const warmBase = chroma.lch(l, Math.max(c, 35), 25).hex();
+                    return [base, ...symmetricAnalogous(warmBase, n - 1, 55)];
+                }
+            },
+            {
+                name: 'Cool',
+                category: 'temperature',
+                colors(base, n) {
+                    const [l, c] = chroma(base).lch();
+                    const coolBase = chroma.lch(l, Math.max(c, 35), 260).hex();
+                    return [base, ...symmetricAnalogous(coolBase, n - 1, 55)];
+                }
+            },
+            {
+                name: 'Warm–Cool Split',
+                category: 'temperature',
+                colors(base, n) {
+                    const [l, c] = chroma(base).lch();
+                    const remaining = n - 1;
+                    const half = Math.ceil(remaining / 2);
+                    const warmColors = symmetricAnalogous(
+                        chroma.lch(l, Math.max(c, 30), 30).hex(), half, 35
+                    );
+                    const coolColors = symmetricAnalogous(
+                        chroma.lch(l, Math.max(c, 30), 240).hex(), remaining - half, 35
+                    );
+                    return [base, ...warmColors, ...coolColors];
+                }
+            },
+
+            // ── GRADIENT (anchored to base) ───────────────────────────
+            {
+                name: 'Sunset',
+                category: 'gradient',
+                colors(base, n) {
+                    return anchoredGradient(base, ['#ff2d55', '#ff6b35', '#ffbe0b', '#c77dff', '#480ca8'], n);
+                }
+            },
+            {
+                name: 'Ocean',
+                category: 'gradient',
+                colors(base, n) {
+                    return anchoredGradient(base, ['#caf0f8', '#90e0ef', '#00b4d8', '#0077b6', '#03045e'], n);
+                }
+            },
+            {
+                name: 'Forest',
+                category: 'gradient',
+                colors(base, n) {
+                    return anchoredGradient(base, ['#d9ed92', '#99d98c', '#52b788', '#1e6091', '#184e77'], n);
+                }
+            },
+            {
+                name: 'Fire',
+                category: 'gradient',
+                colors(base, n) {
+                    return anchoredGradient(base, ['#fff3b0', '#fee75c', '#f77f00', '#d62828', '#6a0572'], n);
+                }
+            },
+
+            // ── PERCEPTUAL ───────────────────────────────────────────
+            {
+                name: 'Balanced LCH',
+                category: 'perceptual',
+                colors(base, n) {
+                    const [l, c] = chroma(base).lch();
+                    return [
+                        base,
+                        ...evenHueSpread(base, n).slice(1).map(h =>
+                            fixChroma(chroma.lch(l, c, chroma(h).lch()[2] || 0).hex(), Math.max(c, 30))
+                        )
+                    ];
+                }
+            },
+            {
+                name: 'High Contrast',
+                category: 'perceptual',
+                colors(base, n) {
+                    const [, c, h] = chroma(base).lch();
+                    return [
+                        base,
+                        ...Array.from({ length: n - 1 }, (_, i) => {
+                            const hShift = (i % 2 === 0) ? 180 : (i * 47);
+                            const l = i % 2 === 0
+                                ? 20 + Math.floor(i / 2) * 10
+                                : 80 - Math.floor(i / 2) * 12;
+                            return chroma.lch(
+                                Math.min(90, Math.max(15, l)),
+                                Math.max(c, 30),
+                                ((h || 0) + hShift + 360) % 360
+                            ).hex();
+                        })
+                    ];
+                }
+            },
+            {
+                name: 'Pastel',
+                category: 'perceptual',
+                colors(base, n) {
+                    // Push base to pastel lightness/chroma, keep hue
+                    const [, , h] = chroma(base).lch();
+                    const pastelBase = chroma.lch(82, 22, h || 0).hex();
+                    return [
+                        base,
+                        ...evenHueSpread(pastelBase, n).slice(1).map(col =>
+                            chroma.lch(82, 22, chroma(col).lch()[2] || 0).hex()
+                        )
+                    ];
+                }
+            },
+            {
+                name: 'Jewel Tones',
+                category: 'perceptual',
+                colors(base, n) {
+                    const [, , h] = chroma(base).lch();
+                    const jewelBase = chroma.lch(42, 65, h || 0).hex();
+                    return [
+                        base,
+                        ...evenHueSpread(jewelBase, n).slice(1).map(col =>
+                            chroma.lch(42, 65, chroma(col).lch()[2] || 0).hex()
+                        )
+                    ];
+                }
+            },
+            {
+                name: 'Earthy / Natural',
+                category: 'perceptual',
+                colors(base, n) {
+                    const [l, c, h] = chroma(base).lch();
+                    const earthBase = chroma.lch(
+                        Math.min(75, Math.max(35, l)),
+                        Math.min(c * 0.5, 28),
+                        h || 0
+                    ).hex();
+                    return [
+                        base,
+                        ...symmetricAnalogous(earthBase, n - 1, 45).map(col => {
+                            const [cl, cc, ch] = chroma(col).lch();
+                            return chroma.lch(
+                                Math.min(75, Math.max(35, cl)),
+                                Math.min(cc * 0.5, 28),
+                                ch || 0
+                            ).hex();
+                        })
+                    ];
+                }
+            },
+        ];
+
+        // ─────────────────────────────────────────────────────────────
+        //  Render
+        // ─────────────────────────────────────────────────────────────
         function generate() {
-            let hex = hexInput.value;
+            const hex = hexInput.value;
             if (!chroma.valid(hex)) return;
 
-            outputs.innerHTML = '';
-            const base = chroma(hex);
+            const useDMC = document.getElementById('dmcToggle').checked;
+            const designNumber = document.getElementById('design_numer').getAttribute('data-design-number');
 
-            const schemes = [
-                {
-                    name: 'Analogous',
-                    colors: Array.from({ length: numColors }, (_, i) => getBalancedColor(base, (45 / (numColors - 1 || 1)) * i))
-                },
-                {
-                    name: 'Monochromatic',
-                    colors: Array.from({ length: numColors }, (_, i) => {
-
-                        if (i === 0) return base.hex();
-
-                        const range = (i / (numColors - 1 || 1)) * 2 - 1;
-                        // -1 → +1
-
-                        return base.brighten(-range * 1.5).hex();
-                    })
-                },
-                {
-                    name: 'Triadic',
-                    colors: Array.from({ length: numColors }, (_, i) => getBalancedColor(base, (360 / 3) * i))
-                },
-                {
-                    name: 'Complementary',
-                    colors: Array.from({ length: numColors }, (_, i) => {
-                        const shift = (i % 2 === 0) ? 0 : 180;
-                        return getBalancedColor(base, shift + (i * 2));
-                    })
-                }
+            const categories = [
+                { key: 'harmony', label: 'Harmony' },
+                { key: 'tone', label: 'Tone & Lightness' },
+                { key: 'temperature', label: 'Temperature' },
+                { key: 'gradient', label: 'Gradient (anchored to your color)' },
+                { key: 'perceptual', label: 'Perceptual' },
             ];
 
-            const design_number = document.getElementById('design_numer').getAttribute('data-design-number');
+            outputs.innerHTML = '';
 
-            schemes.forEach(scheme => {
-                //const allHexInPalette = scheme.colors.map(c => c.toUpperCase());
-                let useDMC = document.getElementById('dmcToggle').checked;
+            categories.forEach(cat => {
+                if (activeCategory !== 'all' && activeCategory !== cat.key) return;
 
-                const allHexInPalette = scheme.colors.map(c => {
-                    if (!useDMC) return c.toUpperCase();
-                    return getNearestAllowedColor(c).toUpperCase();
+                const schemes = SCHEMES.filter(s => s.category === cat.key);
+                if (!schemes.length) return;
+
+                const group = document.createElement('div');
+                group.className = 'category-group';
+
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.textContent = cat.label;
+                group.appendChild(header);
+
+                schemes.forEach(scheme => {
+                    let colors;
+                    try {
+                        colors = scheme.colors(hex, numColors).map(c => chroma(c).hex().toUpperCase());
+                    } catch (e) {
+                        console.warn(scheme.name, e);
+                        return;
+                    }
+
+                    // Index 0 is always the base — note which swatch that maps to after DMC snap
+                    const baseHex = colors[0];
+
+                    if (useDMC) {
+                        colors = snapToDMC(colors);
+                    }
+
+                    const urlHexParam = colors.map(h => h.replace('#', '')).join(',');
+                    const link = `/design/${designNumber}?hex_codes=${urlHexParam}`;
+
+                    const row = document.createElement('div');
+                    row.className = 'row';
+
+                    row.innerHTML = `
+                <div class="row-header">
+                    <a href="${link}" class="source-tag">Apply →</a>
+                </div>
+                <div class="palette"></div>
+            `;
+
+                    const pDiv = row.querySelector('.palette');
+                    colors.forEach((cHex, idx) => {
+                        const swatch = document.createElement('div');
+                        swatch.className = 'swatch' + (idx === 0 ? ' is-base' : '');
+                        swatch.style.backgroundColor = cHex;
+                        swatch.style.color = chroma(cHex).luminance() > 0.4 ? '#000' : '#fff';
+                        swatch.innerHTML = `<span>${cHex}</span>`;
+                        swatch.onclick = () => {
+                            navigator.clipboard.writeText(cHex).catch(() => { });
+                            swatch.style.transform = 'scale(0.93)';
+                            setTimeout(() => swatch.style.transform = '', 120);
+                        };
+                        pDiv.appendChild(swatch);
+                    });
+
+                    group.appendChild(row);
                 });
-                const urlHexParam = allHexInPalette.map(h => h.replace('#', '')).join(',');
-                const link = `/design/${design_number}?hex_codes=${urlHexParam}`;
 
-                const row = document.createElement('div');
-                row.className = 'row';
-
-                row.innerHTML = `
-                    <div class="row-header">
-                        <h3>${scheme.name}</h3>
-                        <a href="${link}" class="source-tag">Apply</a>
-                    </div>
-                    <div class="preview-container"></div>
-                    <div class="palette"></div>
-                `;
-
-                // Handle Palette Swatches
-                const pDiv = row.querySelector('.palette');
-                allHexInPalette.forEach(cHex => {
-                    const swatch = document.createElement('div');
-                    swatch.className = 'swatch';
-                    swatch.style.backgroundColor = cHex;
-                    swatch.style.color = chroma(cHex).luminance() > 0.5 ? '#000' : '#fff';
-                    swatch.innerHTML = `<span>${cHex}</span>`;
-
-                    swatch.onclick = () => {
-                        navigator.clipboard.writeText(cHex);
-                        swatch.style.transform = "scale(0.9)";
-                        setTimeout(() => swatch.style.transform = "", 100);
-                    };
-                    pDiv.appendChild(swatch);
-                });
-
-                outputs.appendChild(row);
+                outputs.appendChild(group);
             });
         }
 
-        // Event Listeners
+        // ─────────────────────────────────────────────────────────────
+        //  Category filter tabs
+        // ─────────────────────────────────────────────────────────────
+        document.getElementById('filterTabs').addEventListener('click', (e) => {
+            const tab = e.target.closest('.filter-tab');
+            if (!tab) return;
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            activeCategory = tab.dataset.cat;
+            generate();
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        //  Event listeners
+        // ─────────────────────────────────────────────────────────────
         picker.oninput = (e) => {
             hexInput.value = e.target.value.toUpperCase();
             generate();
@@ -382,7 +841,7 @@
             let val = e.target.value;
             if (!val.startsWith('#')) val = '#' + val;
             val = '#' + val.replace(/#/g, '').toUpperCase();
-            e.target.value = val.toUpperCase();
+            e.target.value = val;
             if (chroma.valid(val) && val.length === 7) {
                 picker.value = chroma(val).hex();
                 generate();
@@ -392,19 +851,20 @@
         randomBtn.onclick = () => {
             const useDMC = document.getElementById('dmcToggle').checked;
             let newColor = chroma.random().saturate(1.5).hex();
-
-            if (useDMC) {
-                // Snap to nearest allowed DMC color
-                newColor = getNearestAllowedColor(newColor);
-            }
-
-            picker.value = newColor.toUpperCase();
-            hexInput.value = newColor.toUpperCase();
+            if (useDMC) newColor = getNearestAllowedColor(newColor);
+            picker.value = chroma(newColor).hex();
+            hexInput.value = chroma(newColor).hex().toUpperCase();
             generate();
         };
 
-        // Initialize
-        window.onload = generate;
+        document.getElementById('dmcToggle').onchange = generate;
+
+        window.onload = () => {
+            const initColor = picker.value || '#e05c5c';
+            picker.value = initColor;
+            hexInput.value = initColor.toUpperCase();
+            generate();
+        };
     </script>
 </body>
 

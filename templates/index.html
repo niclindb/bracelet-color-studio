@@ -3,14 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bracelet Color Studio</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <style>
         :root {
             --bg: #0b0f1a;
             --panel: #161b2a;
+            --panel-light: #1f263d;
             --accent: #60a5fa;
+            --border: #2d334a;
             --text-dim: #94a3b8;
         }
 
@@ -19,172 +21,585 @@
             background: var(--bg);
             color: #fff;
             margin: 0;
+            padding: 15px;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            /* Using dynamic viewport height for mobile browser toolbars */
-            min-height: 100dvh;
-            padding: 20px;
-            box-sizing: border-box;
+            min-height: 100vh;
         }
 
-        .hero-container {
+        .container {
             width: 100%;
-            max-width: 420px;
-            text-align: center;
+            max-width: 900px;
         }
 
-        .design-card {
-            background: var(--panel);
-            /* Responsive padding: smaller on mobile, larger on desktop */
-            padding: clamp(30px, 8vw, 50px) clamp(20px, 5vw, 40px);
-            border-radius: 28px;
-            border: 1px solid #2d334a;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        header {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            width: 100%;
         }
 
-        .logo-mark {
-            width: 56px;
-            height: 56px;
-            background: var(--accent);
-            border-radius: 14px;
-            margin: 0 auto 24px;
+        h2 {
+            font-size: 1.1rem;
+            margin: 0;
             display: flex;
             align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 25px rgba(96, 165, 250, 0.4);
+            gap: 8px;
         }
 
-        h1 {
-            font-size: 1.6rem;
-            margin-bottom: 10px;
-            letter-spacing: -0.5px;
-            font-weight: 800;
-        }
-
-        p {
-            color: var(--text-dim);
-            font-size: 1rem;
-            margin-bottom: 35px;
-            line-height: 1.5;
-        }
-
-        .input-group {
+        #controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--panel);
+            border-radius: 16px;
+            border: 1px solid var(--border);
             position: relative;
-            margin-bottom: 24px;
+        }
+
+        .color-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--panel-light);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+            transition: box-shadow 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s;
+        }
+
+        /* Drag handle */
+        .drag-handle {
+            width: 36px;
+            height: 5px;
+            border-radius: 3px;
+            background: var(--border);
+            margin-bottom: 10px;
+            cursor: grab;
+            flex-shrink: 0;
+            transition: background 0.15s;
+            touch-action: none;
+            /* critical: hands all touch to JS */
+        }
+
+        .color-group:hover .drag-handle {
+            background: var(--accent);
+        }
+
+        /* Source card dims while dragging */
+        .color-group.is-placeholder {
+            opacity: 0.2;
+            border-style: dashed;
+            border-color: var(--accent);
+        }
+
+        /* Target card glows */
+        .color-group.drag-over {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent);
+            transform: scale(1.04);
+        }
+
+        /* Floating ghost that follows the finger */
+        #drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 2px solid var(--accent);
+            background: var(--panel-light);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+            opacity: 0.93;
+        }
+
+        #drag-ghost .ghost-swatch {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        #drag-ghost .ghost-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
         }
 
         label {
-            display: block;
-            text-align: left;
-            font-size: 0.75rem;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 1px;
             color: var(--text-dim);
-            margin-bottom: 10px;
-            padding-left: 4px;
-            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            text-align: center;
         }
 
-        input[type="number"] {
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             width: 100%;
-            background: #1f263d;
-            border: 1px solid #3d445e;
+        }
+
+        input[type="color"] {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border: none;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: #0b0f1a;
+            border: 1px solid var(--border);
             color: #fff;
-            /* 16px font prevents iOS auto-zoom on focus */
-            padding: 16px;
-            border-radius: 14px;
-            font-size: 1.1rem;
+            padding: 5px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            text-align: center;
             outline: none;
-            box-sizing: border-box;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            appearance: none;
         }
 
-        input[type="number"]:focus {
-            border-color: var(--accent);
-            background: #252d4a;
-            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
-        }
-
-        /* Hide number spinners for a cleaner look */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        button {
-            width: 100%;
+        .btn-primary {
             background: var(--accent);
             color: #0b0f1a;
             border: none;
-            padding: 18px;
-            border-radius: 14px;
-            font-weight: 800;
-            font-size: 1rem;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
             cursor: pointer;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            transition: all 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        button:active {
-            transform: scale(0.98);
-            background: #93c5fd;
+        .preview-area {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 500px;
+            overflow: hidden;
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7);
         }
 
-        /* Hover only applies to devices with a mouse */
-        @media (hover: hover) {
-            button:hover {
-                background: #93c5fd;
-                transform: translateY(-2px);
-                box-shadow: 0 10px 20px -5px rgba(96, 165, 250, 0.3);
+        .preview-bar-wrapper {
+            width: 100%;
+            height: 90px;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-bar-wrapper svg {
+            height: 80% !important;
+            width: auto !important;
+            flex-shrink: 0;
+        }
+
+        .main-design-wrapper {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .main-design-wrapper svg {
+            width: 100% !important;
+            max-width: 550px;
+            height: auto !important;
+        }
+
+        .floss-code {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            opacity: 0.8;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
             }
-        }
 
-        .error-msg {
-            margin-top: 25px;
-            padding: 14px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            color: #f87171;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 500;
+            #controls {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .preview-bar-wrapper {
+                height: 80px;
+            }
+
+            .preview-bar-wrapper svg {
+                height: 80% !important;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="hero-container">
-        <div class="design-card">
-            <div class="logo-mark">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-            </div>
-            <h1>✦ Bracelet Color Studio</h1>
-            <p>Enter a design number from braceletbook.com to start your design</p>
 
-            <form id="designForm" method="POST" action="/submit-design">
-                <div class="input-group">
-                    <label for="design_number">Design Number</label>
-                    <input type="number" id="design_number" name="design_number" placeholder="e.g. 1024"
-                        inputmode="numeric" pattern="[0-9]*" required>
-                </div>
-                <button type="submit" id="submitDesign">Initialize Design</button>
-            </form>
+    <div class="container">
+        <header>
+            <h2>Pattern Editor</h2>
+            <button class="btn-primary" onclick="colorGenerator()">Smart Palette</button>
+        </header>
 
-            {% if error %}
-            <div class="error-msg">
-                {{ error }}
-            </div>
+        <div id="controls"></div>
+
+        <div class="preview-area" id="svgPreview">
+            {% if pattern %}
+            <div class="preview-bar-wrapper">{{ preview|safe }}</div>
+            <div class="main-design-wrapper">{{ pattern|safe }}</div>
+            {% else %}
+            <p style="color: var(--text-dim);">No design loaded.</p>
             {% endif %}
         </div>
+
+        <div id="hexCodesContainer" style="display:none;">
+            {% for hex in hex_codes %}<span class="hex-value">{{ hex }}</span>{% endfor %}
+        </div>
+        <div id="flossCodesContainer" style="display:none;">
+            {% for floss in floss_codes %}<span class="floss-value">{{ floss }}</span>{% endfor %}
+        </div>
     </div>
+
+    <!-- Ghost card that floats under finger/cursor while dragging -->
+    <div id="drag-ghost">
+        <div class="ghost-swatch" id="ghost-swatch"></div>
+        <div class="ghost-label" id="ghost-label"></div>
+    </div>
+
+    <script>
+        // ─────────────────────────────────────────────────────────────
+        //  Constants
+        // ─────────────────────────────────────────────────────────────
+        const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
+
+        // ─────────────────────────────────────────────────────────────
+        //  Pointer-based drag (iOS Safari, Android, Desktop)
+        // ─────────────────────────────────────────────────────────────
+        const ghost = document.getElementById('drag-ghost');
+        const ghostSwatch = document.getElementById('ghost-swatch');
+        const ghostLabel = document.getElementById('ghost-label');
+
+        let drag = {
+            active: false,   // ghost is visible and moving
+            srcEl: null,    // card being dragged
+            overEl: null,    // card currently hovered
+            startX: 0,
+            startY: 0,
+            offsetX: 0,       // pointer offset inside the card
+            offsetY: 0,
+        };
+
+        function initDrag(card) {
+            const handle = card.querySelector('.drag-handle');
+
+            handle.addEventListener('pointerdown', (e) => {
+                if (e.button !== 0 && e.button !== undefined) return;
+                e.preventDefault();
+
+                drag.srcEl = card;
+                drag.startX = e.clientX;
+                drag.startY = e.clientY;
+                drag.active = false;
+
+                // Capture so pointermove fires even when finger leaves the handle
+                handle.setPointerCapture(e.pointerId);
+                handle.addEventListener('pointermove', onMove);
+                handle.addEventListener('pointerup', onUp);
+                handle.addEventListener('pointercancel', onUp);
+            });
+        }
+
+        function onMove(e) {
+            const dx = e.clientX - drag.startX;
+            const dy = e.clientY - drag.startY;
+
+            // Wait until the user has moved at least 6px before activating drag
+            if (!drag.active) {
+                if (Math.hypot(dx, dy) < 6) return;
+
+                // Activate
+                drag.active = true;
+                const rect = drag.srcEl.getBoundingClientRect();
+                drag.offsetX = drag.startX - rect.left;
+                drag.offsetY = drag.startY - rect.top;
+
+                // Style ghost
+                const picker = drag.srcEl.querySelector('input[type="color"]');
+                ghostSwatch.style.background = picker ? picker.value : '#888';
+                ghostLabel.textContent = 'Color ' + (drag.srcEl.dataset.suffix || '').toUpperCase();
+                ghost.style.width = rect.width + 'px';
+                ghost.style.display = 'flex';
+
+                drag.srcEl.classList.add('is-placeholder');
+                document.body.style.overflow = 'hidden'; // lock page scroll
+            }
+
+            // Move ghost to follow finger/cursor
+            ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+            ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+
+            // Hit-test: find which card is under the pointer
+            // Temporarily hide ghost so it doesn't block elementFromPoint
+            ghost.style.display = 'none';
+            const elBelow = document.elementFromPoint(e.clientX, e.clientY);
+            ghost.style.display = 'flex';
+
+            const targetCard = elBelow ? elBelow.closest('.color-group') : null;
+
+            if (drag.overEl && drag.overEl !== targetCard) {
+                drag.overEl.classList.remove('drag-over');
+            }
+            if (targetCard && targetCard !== drag.srcEl) {
+                targetCard.classList.add('drag-over');
+                drag.overEl = targetCard;
+            } else {
+                drag.overEl = null;
+            }
+        }
+
+        function onUp(e) {
+            const handle = e.currentTarget;
+            handle.removeEventListener('pointermove', onMove);
+            handle.removeEventListener('pointerup', onUp);
+            handle.removeEventListener('pointercancel', onUp);
+
+            // Clean up visual states
+            ghost.style.display = 'none';
+            document.body.style.overflow = '';
+            if (drag.srcEl) drag.srcEl.classList.remove('is-placeholder');
+            if (drag.overEl) drag.overEl.classList.remove('drag-over');
+
+            // Perform the swap
+            if (drag.active && drag.overEl && drag.overEl !== drag.srcEl) {
+                swapCards(drag.srcEl, drag.overEl);
+            }
+
+            drag.active = false;
+            drag.srcEl = null;
+            drag.overEl = null;
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        //  Swap two cards in the DOM then rebind suffix → SVG mapping
+        // ─────────────────────────────────────────────────────────────
+        function swapCards(a, b) {
+            // Use a comment node as a temporary placeholder
+            const marker = document.createComment('');
+            a.replaceWith(marker);
+            b.replaceWith(a);
+            marker.replaceWith(b);
+            rebindAllSuffixes();
+        }
+
+        function rebindAllSuffixes() {
+            const cards = [...document.querySelectorAll('#controls .color-group')];
+            cards.forEach((card, i) => {
+                const suffix = COLOR_SUFFIXES[i];
+                const currentColor = card.querySelector('input[type="color"]').value;
+
+                card.dataset.suffix = suffix;
+
+                // Update label text
+                const labelEl = card.querySelector('label');
+                if (labelEl) {
+                    const flossSpan = labelEl.querySelector('.floss-code');
+                    const flossHTML = flossSpan ? flossSpan.outerHTML : '';
+                    labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossHTML}`;
+                }
+
+                // Clone inputs to drop stale event listeners, then rebind
+                const picker = card.querySelector('input[type="color"]');
+                const textField = card.querySelector('input[type="text"]');
+                const newPicker = picker.cloneNode(true);
+                const newText = textField.cloneNode(true);
+                picker.replaceWith(newPicker);
+                textField.replaceWith(newText);
+                bindInputEvents(card, suffix, newPicker, newText);
+
+                // Apply this card's color to its new suffix slot in the SVG
+                updateSVGColors(suffix, currentColor);
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        //  Input ↔ SVG sync
+        // ─────────────────────────────────────────────────────────────
+        function bindInputEvents(card, suffix, picker, textField) {
+            picker.addEventListener('input', (e) => {
+                const color = e.target.value;
+                textField.value = color.toUpperCase();
+                updateSVGColors(suffix, color);
+            });
+
+            textField.addEventListener('input', (e) => {
+                let color = e.target.value;
+                if (!color.startsWith('#')) color = '#' + color;
+                if (/(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)) {
+                    picker.value = color;
+                    updateSVGColors(suffix, color);
+                }
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        //  Original app functions (unchanged)
+        // ─────────────────────────────────────────────────────────────
+        function colorGenerator() {
+            const controls = document.getElementById('controls');
+            const colorCount = controls.childElementCount;
+            const svgs = document.querySelectorAll('#svgPreview svg');
+            const previewSvg = svgs.length > 0 ? svgs[0].outerHTML : '';
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/generate-colors/${colorCount}`;
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'preview_svg';
+            hiddenInput.value = previewSvg;
+            form.appendChild(hiddenInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function processSVG() {
+            const hexElements = document.querySelectorAll('#hexCodesContainer .hex-value');
+            const incomingHexCodes = Array.from(hexElements).map(el => el.textContent.trim());
+            const flossElements = document.querySelectorAll('#flossCodesContainer .floss-value');
+            const incomingFlossCodes = Array.from(flossElements).map(el => el.textContent.trim());
+
+            const previewArea = document.getElementById('svgPreview');
+            const controls = document.getElementById('controls');
+            const svgs = previewArea.querySelectorAll('svg');
+
+            if (svgs.length === 0) return;
+            controls.innerHTML = '';
+
+            let combinedStyleText = '';
+            svgs.forEach(s => {
+                const style = s.querySelector('style');
+                if (style) combinedStyleText += style.textContent;
+            });
+
+            COLOR_SUFFIXES.forEach((suffix, index) => {
+                const hasMain = combinedStyleText.includes(`.s1-${suffix}`);
+                const hasPreview = combinedStyleText.includes(`.k-${suffix}`);
+                if (!hasMain && !hasPreview) return;
+
+                let svgOriginal = '#000000';
+                if (hasMain) {
+                    const match = combinedStyleText.match(new RegExp(`\\.s1-${suffix}\\{stroke:([^}]+)\\}`, 'i'));
+                    if (match) svgOriginal = match[1].trim();
+                } else {
+                    const match = combinedStyleText.match(new RegExp(`\\.k-${suffix}\\{fill:([^}]+)\\}`, 'i'));
+                    if (match) svgOriginal = match[1].trim();
+                }
+
+                let activeColor = incomingHexCodes[index] || svgOriginal;
+                activeColor = convertToHex(activeColor);
+                updateSVGColors(suffix, activeColor);
+
+                // ── Build card ──
+                const card = document.createElement('div');
+                card.className = 'color-group';
+                card.dataset.suffix = suffix;
+
+                const handle = document.createElement('div');
+                handle.className = 'drag-handle';
+                card.appendChild(handle);
+
+                const labelEl = document.createElement('label');
+                const flossHTML = incomingFlossCodes[index]
+                    ? `<span class="floss-code">${incomingFlossCodes[index]}</span>`
+                    : '';
+                labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossHTML}`;
+                card.appendChild(labelEl);
+
+                const inputRow = document.createElement('div');
+                inputRow.className = 'input-row';
+
+                const picker = document.createElement('input');
+                picker.type = 'color';
+                picker.value = activeColor;
+
+                const textField = document.createElement('input');
+                textField.type = 'text';
+                textField.value = activeColor.toUpperCase();
+
+                bindInputEvents(card, suffix, picker, textField);
+                inputRow.appendChild(picker);
+                inputRow.appendChild(textField);
+                card.appendChild(inputRow);
+                controls.appendChild(card);
+
+                initDrag(card);
+            });
+        }
+
+        function updateSVGColors(suffix, newColor) {
+            document.querySelectorAll('#svgPreview svg').forEach(svg => {
+                svg.querySelectorAll('style').forEach(styleTag => {
+                    let css = styleTag.textContent;
+                    css = css
+                        .replace(new RegExp(`(\\.s1-${suffix}\\{stroke:)([^}]+)(\\})`, 'g'), `$1${newColor}$3`)
+                        .replace(new RegExp(`(\\.kk-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${newColor}$3`)
+                        .replace(new RegExp(`(\\.k-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${newColor}$3`)
+                        .replace(new RegExp(`(\\.s-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${newColor}$3`);
+                    styleTag.textContent = css;
+                });
+            });
+        }
+
+        function convertToHex(color) {
+            const ctx = document.createElement('canvas').getContext('2d');
+            ctx.fillStyle = color;
+            return ctx.fillStyle;
+        }
+
+        window.onload = processSVG;
+    </script>
 </body>
 
 </html>
