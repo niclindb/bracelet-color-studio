@@ -59,9 +59,9 @@
             background: var(--panel);
             border-radius: 16px;
             border: 1px solid var(--border);
+            position: relative;
         }
 
-        /* ── Drag & Drop styles ── */
         .color-group {
             display: flex;
             flex-direction: column;
@@ -70,41 +70,71 @@
             padding: 10px;
             border-radius: 12px;
             border: 1px solid var(--border);
-            cursor: grab;
-            transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s, border-color 0.15s;
-            user-select: none;
             position: relative;
+            transition: box-shadow 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s;
         }
 
-        .color-group:active {
-            cursor: grabbing;
+        /* Drag handle */
+        .drag-handle {
+            width: 36px;
+            height: 5px;
+            border-radius: 3px;
+            background: var(--border);
+            margin-bottom: 10px;
+            cursor: grab;
+            flex-shrink: 0;
+            transition: background 0.15s;
+            touch-action: none;
+            /* critical: hands all touch to JS */
         }
 
-        /* drag handle icon at top */
-        .color-group::before {
-            content: '⠿';
-            position: absolute;
-            top: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 12px;
-            color: var(--text-dim);
-            opacity: 0.4;
-            pointer-events: none;
-            letter-spacing: -1px;
+        .color-group:hover .drag-handle {
+            background: var(--accent);
         }
 
-        .color-group.dragging {
-            opacity: 0.35;
-            transform: scale(0.97);
-            box-shadow: none;
+        /* Source card dims while dragging */
+        .color-group.is-placeholder {
+            opacity: 0.2;
+            border-style: dashed;
             border-color: var(--accent);
         }
 
+        /* Target card glows */
         .color-group.drag-over {
             border-color: var(--accent);
             box-shadow: 0 0 0 2px var(--accent);
-            transform: scale(1.03);
+            transform: scale(1.04);
+        }
+
+        /* Floating ghost that follows the finger */
+        #drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 2px solid var(--accent);
+            background: var(--panel-light);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
+            opacity: 0.93;
+        }
+
+        #drag-ghost .ghost-swatch {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        #drag-ghost .ghost-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
         }
 
         label {
@@ -113,8 +143,6 @@
             letter-spacing: 1px;
             color: var(--text-dim);
             margin-bottom: 8px;
-            margin-top: 10px;
-            /* push down below the drag handle */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -172,7 +200,6 @@
             text-transform: uppercase;
         }
 
-        /* ARTBOARD AREA */
         .preview-area {
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             border-radius: 24px;
@@ -186,7 +213,6 @@
             box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7);
         }
 
-        /* THE RIBBON ZOOM WINDOW */
         .preview-bar-wrapper {
             width: 100%;
             height: 90px;
@@ -207,7 +233,6 @@
             flex-shrink: 0;
         }
 
-        /* MAIN PATTERN AREA */
         .main-design-wrapper {
             width: 100%;
             flex-grow: 1;
@@ -221,15 +246,6 @@
             width: 100% !important;
             max-width: 550px;
             height: auto !important;
-        }
-
-        .section-label {
-            align-self: flex-start;
-            font-size: 11px;
-            color: var(--text-dim);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
         .floss-code {
@@ -267,149 +283,190 @@
             <button class="btn-primary" onclick="colorGenerator()">Smart Palette</button>
         </header>
 
-        <div id="controls">
-            <!-- Dynamic UI -->
-        </div>
+        <div id="controls"></div>
 
         <div class="preview-area" id="svgPreview">
             {% if pattern %}
-            <div class="preview-bar-wrapper">
-                {{ preview|safe }}
-            </div>
-
-            <div class="main-design-wrapper">
-                {{ pattern|safe }}
-            </div>
+            <div class="preview-bar-wrapper">{{ preview|safe }}</div>
+            <div class="main-design-wrapper">{{ pattern|safe }}</div>
             {% else %}
             <p style="color: var(--text-dim);">No design loaded.</p>
             {% endif %}
         </div>
 
-        <div id="hexCodesContainer" style="display: none;">
-            {% for hex in hex_codes %}
-            <span class="hex-value">{{ hex }}</span>
-            {% endfor %}
+        <div id="hexCodesContainer" style="display:none;">
+            {% for hex in hex_codes %}<span class="hex-value">{{ hex }}</span>{% endfor %}
         </div>
-        <div id="flossCodesContainer" style="display: none;">
-            {% for floss in floss_codes %}
-            <span class="floss-value">{{ floss }}</span>
-            {% endfor %}
+        <div id="flossCodesContainer" style="display:none;">
+            {% for floss in floss_codes %}<span class="floss-value">{{ floss }}</span>{% endfor %}
         </div>
     </div>
 
+    <!-- Ghost card that floats under finger/cursor while dragging -->
+    <div id="drag-ghost">
+        <div class="ghost-swatch" id="ghost-swatch"></div>
+        <div class="ghost-label" id="ghost-label"></div>
+    </div>
+
     <script>
-        // ─────────────────────────────────────────────
-        //  Drag-and-drop reorder
-        // ─────────────────────────────────────────────
-        let dragSrc = null;
+        // ─────────────────────────────────────────────────────────────
+        //  Constants
+        // ─────────────────────────────────────────────────────────────
+        const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
 
-        function addDragHandlers(el) {
-            el.setAttribute('draggable', 'true');
+        // ─────────────────────────────────────────────────────────────
+        //  Pointer-based drag (iOS Safari, Android, Desktop)
+        // ─────────────────────────────────────────────────────────────
+        const ghost = document.getElementById('drag-ghost');
+        const ghostSwatch = document.getElementById('ghost-swatch');
+        const ghostLabel = document.getElementById('ghost-label');
 
-            el.addEventListener('dragstart', (e) => {
-                dragSrc = el;
-                el.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
-            });
+        let drag = {
+            active: false,   // ghost is visible and moving
+            srcEl: null,    // card being dragged
+            overEl: null,    // card currently hovered
+            startX: 0,
+            startY: 0,
+            offsetX: 0,       // pointer offset inside the card
+            offsetY: 0,
+        };
 
-            el.addEventListener('dragend', () => {
-                el.classList.remove('dragging');
-                document.querySelectorAll('.color-group').forEach(g => g.classList.remove('drag-over'));
-                dragSrc = null;
-            });
+        function initDrag(card) {
+            const handle = card.querySelector('.drag-handle');
 
-            el.addEventListener('dragover', (e) => {
+            handle.addEventListener('pointerdown', (e) => {
+                if (e.button !== 0 && e.button !== undefined) return;
                 e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (dragSrc && dragSrc !== el) {
-                    el.classList.add('drag-over');
-                }
-            });
 
-            el.addEventListener('dragleave', () => {
-                el.classList.remove('drag-over');
-            });
+                drag.srcEl = card;
+                drag.startX = e.clientX;
+                drag.startY = e.clientY;
+                drag.active = false;
 
-            el.addEventListener('drop', (e) => {
-                e.preventDefault();
-                el.classList.remove('drag-over');
-                if (!dragSrc || dragSrc === el) return;
-
-                // Swap the two color-groups in the DOM
-                const controls = document.getElementById('controls');
-                const groups = [...controls.querySelectorAll('.color-group')];
-                const srcIdx = groups.indexOf(dragSrc);
-                const tgtIdx = groups.indexOf(el);
-
-                if (srcIdx === -1 || tgtIdx === -1) return;
-
-                // Swap DOM positions
-                if (srcIdx < tgtIdx) {
-                    controls.insertBefore(dragSrc, el.nextSibling);
-                } else {
-                    controls.insertBefore(dragSrc, el);
-                }
-
-                // After swap, re-read every group's current color and re-apply
-                // using its suffix so the SVG stays consistent.
-                // Because we're only reordering the UI slots, we need to swap
-                // the actual suffix assignments so the SVG colors move too.
-                swapSuffixColors(srcIdx, tgtIdx);
+                // Capture so pointermove fires even when finger leaves the handle
+                handle.setPointerCapture(e.pointerId);
+                handle.addEventListener('pointermove', onMove);
+                handle.addEventListener('pointerup', onUp);
+                handle.addEventListener('pointercancel', onUp);
             });
         }
 
-        // Swap the suffix bindings between two positions so the SVG updates
-        function swapSuffixColors(idxA, idxB) {
-            const controls = document.getElementById('controls');
-            const groups = [...controls.querySelectorAll('.color-group')];
+        function onMove(e) {
+            const dx = e.clientX - drag.startX;
+            const dy = e.clientY - drag.startY;
 
-            // After the DOM swap the groups array is already re-ordered,
-            // so we just need to reassign each group's suffix to match its
-            // new visual position, then repaint everything.
+            // Wait until the user has moved at least 6px before activating drag
+            if (!drag.active) {
+                if (Math.hypot(dx, dy) < 6) return;
+
+                // Activate
+                drag.active = true;
+                const rect = drag.srcEl.getBoundingClientRect();
+                drag.offsetX = drag.startX - rect.left;
+                drag.offsetY = drag.startY - rect.top;
+
+                // Style ghost
+                const picker = drag.srcEl.querySelector('input[type="color"]');
+                ghostSwatch.style.background = picker ? picker.value : '#888';
+                ghostLabel.textContent = 'Color ' + (drag.srcEl.dataset.suffix || '').toUpperCase();
+                ghost.style.width = rect.width + 'px';
+                ghost.style.display = 'flex';
+
+                drag.srcEl.classList.add('is-placeholder');
+                document.body.style.overflow = 'hidden'; // lock page scroll
+            }
+
+            // Move ghost to follow finger/cursor
+            ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+            ghost.style.top = (e.clientY - drag.offsetY) + 'px';
+
+            // Hit-test: find which card is under the pointer
+            // Temporarily hide ghost so it doesn't block elementFromPoint
+            ghost.style.display = 'none';
+            const elBelow = document.elementFromPoint(e.clientX, e.clientY);
+            ghost.style.display = 'flex';
+
+            const targetCard = elBelow ? elBelow.closest('.color-group') : null;
+
+            if (drag.overEl && drag.overEl !== targetCard) {
+                drag.overEl.classList.remove('drag-over');
+            }
+            if (targetCard && targetCard !== drag.srcEl) {
+                targetCard.classList.add('drag-over');
+                drag.overEl = targetCard;
+            } else {
+                drag.overEl = null;
+            }
+        }
+
+        function onUp(e) {
+            const handle = e.currentTarget;
+            handle.removeEventListener('pointermove', onMove);
+            handle.removeEventListener('pointerup', onUp);
+            handle.removeEventListener('pointercancel', onUp);
+
+            // Clean up visual states
+            ghost.style.display = 'none';
+            document.body.style.overflow = '';
+            if (drag.srcEl) drag.srcEl.classList.remove('is-placeholder');
+            if (drag.overEl) drag.overEl.classList.remove('drag-over');
+
+            // Perform the swap
+            if (drag.active && drag.overEl && drag.overEl !== drag.srcEl) {
+                swapCards(drag.srcEl, drag.overEl);
+            }
+
+            drag.active = false;
+            drag.srcEl = null;
+            drag.overEl = null;
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        //  Swap two cards in the DOM then rebind suffix → SVG mapping
+        // ─────────────────────────────────────────────────────────────
+        function swapCards(a, b) {
+            // Use a comment node as a temporary placeholder
+            const marker = document.createComment('');
+            a.replaceWith(marker);
+            b.replaceWith(a);
+            marker.replaceWith(b);
             rebindAllSuffixes();
         }
 
-        // Walk every color-group in current DOM order, reassign their suffix
-        // data attribute, update label, and repaint the SVG.
         function rebindAllSuffixes() {
-            const colorSuffixes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
-            const controls = document.getElementById('controls');
-            const groups = [...controls.querySelectorAll('.color-group')];
+            const cards = [...document.querySelectorAll('#controls .color-group')];
+            cards.forEach((card, i) => {
+                const suffix = COLOR_SUFFIXES[i];
+                const currentColor = card.querySelector('input[type="color"]').value;
 
-            groups.forEach((group, i) => {
-                const newSuffix = colorSuffixes[i];
-                const oldSuffix = group.dataset.suffix;
-                const currentColor = group.querySelector('input[type="color"]').value;
+                card.dataset.suffix = suffix;
 
-                // Update stored suffix
-                group.dataset.suffix = newSuffix;
-
-                // Update the label text (Color A, Color B …)
-                const labelEl = group.querySelector('label');
+                // Update label text
+                const labelEl = card.querySelector('label');
                 if (labelEl) {
                     const flossSpan = labelEl.querySelector('.floss-code');
-                    const flossText = flossSpan ? flossSpan.outerHTML : '';
-                    labelEl.innerHTML = `Color ${newSuffix.toUpperCase()} ${flossText}`;
+                    const flossHTML = flossSpan ? flossSpan.outerHTML : '';
+                    labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossHTML}`;
                 }
 
-                // Rewire the picker/text events to use the new suffix
-                const picker = group.querySelector('input[type="color"]');
-                const textField = group.querySelector('input[type="text"]');
-
-                // Remove old listeners by cloning
+                // Clone inputs to drop stale event listeners, then rebind
+                const picker = card.querySelector('input[type="color"]');
+                const textField = card.querySelector('input[type="text"]');
                 const newPicker = picker.cloneNode(true);
                 const newText = textField.cloneNode(true);
                 picker.replaceWith(newPicker);
                 textField.replaceWith(newText);
+                bindInputEvents(card, suffix, newPicker, newText);
 
-                bindInputEvents(group, newSuffix, newPicker, newText);
-
-                // Push this group's color to its new suffix slot in the SVG
-                updateSVGColors(newSuffix, currentColor);
+                // Apply this card's color to its new suffix slot in the SVG
+                updateSVGColors(suffix, currentColor);
             });
         }
 
-        function bindInputEvents(group, suffix, picker, textField) {
+        // ─────────────────────────────────────────────────────────────
+        //  Input ↔ SVG sync
+        // ─────────────────────────────────────────────────────────────
+        function bindInputEvents(card, suffix, picker, textField) {
             picker.addEventListener('input', (e) => {
                 const color = e.target.value;
                 textField.value = color.toUpperCase();
@@ -426,14 +483,14 @@
             });
         }
 
-        // ─────────────────────────────────────────────
-        //  Original functions (unchanged logic)
-        // ─────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────
+        //  Original app functions (unchanged)
+        // ─────────────────────────────────────────────────────────────
         function colorGenerator() {
-            const colorDif = document.getElementById('controls');
-            const colorCount = colorDif.childElementCount;
+            const controls = document.getElementById('controls');
+            const colorCount = controls.childElementCount;
             const svgs = document.querySelectorAll('#svgPreview svg');
-            const previewSvg = svgs.length > 0 ? svgs[0].outerHTML : "";
+            const previewSvg = svgs.length > 0 ? svgs[0].outerHTML : '';
 
             const form = document.createElement('form');
             form.method = 'POST';
@@ -450,91 +507,86 @@
         function processSVG() {
             const hexElements = document.querySelectorAll('#hexCodesContainer .hex-value');
             const incomingHexCodes = Array.from(hexElements).map(el => el.textContent.trim());
+            const flossElements = document.querySelectorAll('#flossCodesContainer .floss-value');
+            const incomingFlossCodes = Array.from(flossElements).map(el => el.textContent.trim());
+
             const previewArea = document.getElementById('svgPreview');
             const controls = document.getElementById('controls');
             const svgs = previewArea.querySelectorAll('svg');
-            const flossElements = document.querySelectorAll('#flossCodesContainer .floss-value');
-            const incomingFlossCodes = Array.from(flossElements).map(el => el.textContent.trim());
 
             if (svgs.length === 0) return;
             controls.innerHTML = '';
 
-            let combinedStyleText = "";
+            let combinedStyleText = '';
             svgs.forEach(s => {
                 const style = s.querySelector('style');
                 if (style) combinedStyleText += style.textContent;
             });
 
-            const colorSuffixes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
-
-            colorSuffixes.forEach((suffix, index) => {
+            COLOR_SUFFIXES.forEach((suffix, index) => {
                 const hasMain = combinedStyleText.includes(`.s1-${suffix}`);
                 const hasPreview = combinedStyleText.includes(`.k-${suffix}`);
+                if (!hasMain && !hasPreview) return;
 
-                if (hasMain || hasPreview) {
-                    let svgOriginal = '#000000';
-                    if (hasMain) {
-                        const match = combinedStyleText.match(new RegExp(`\\.s1-${suffix}\\{stroke:([^}]+)\\}`, 'i'));
-                        if (match) svgOriginal = match[1].trim();
-                    } else {
-                        const match = combinedStyleText.match(new RegExp(`\\.k-${suffix}\\{fill:([^}]+)\\}`, 'i'));
-                        if (match) svgOriginal = match[1].trim();
-                    }
-
-                    let activeColor = (incomingHexCodes.length > index) ? incomingHexCodes[index] : svgOriginal;
-                    activeColor = convertToHex(activeColor);
-
-                    updateSVGColors(suffix, activeColor);
-
-                    const group = document.createElement('div');
-                    group.className = 'color-group';
-                    group.dataset.suffix = suffix; // store for drag-drop rebinding
-
-                    const labelEl = document.createElement('label');
-                    const flossSpan = incomingFlossCodes[index]
-                        ? `<span class="floss-code">${incomingFlossCodes[index]}</span>`
-                        : '';
-                    labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossSpan}`;
-                    group.appendChild(labelEl);
-
-                    const inputRow = document.createElement('div');
-                    inputRow.className = 'input-row';
-
-                    const picker = document.createElement('input');
-                    picker.type = 'color';
-                    picker.value = activeColor;
-
-                    const textField = document.createElement('input');
-                    textField.type = 'text';
-                    textField.value = activeColor.toUpperCase();
-
-                    bindInputEvents(group, suffix, picker, textField);
-
-                    inputRow.appendChild(picker);
-                    inputRow.appendChild(textField);
-                    group.appendChild(inputRow);
-                    controls.appendChild(group);
-
-                    // Attach drag handlers
-                    addDragHandlers(group);
+                let svgOriginal = '#000000';
+                if (hasMain) {
+                    const match = combinedStyleText.match(new RegExp(`\\.s1-${suffix}\\{stroke:([^}]+)\\}`, 'i'));
+                    if (match) svgOriginal = match[1].trim();
+                } else {
+                    const match = combinedStyleText.match(new RegExp(`\\.k-${suffix}\\{fill:([^}]+)\\}`, 'i'));
+                    if (match) svgOriginal = match[1].trim();
                 }
+
+                let activeColor = incomingHexCodes[index] || svgOriginal;
+                activeColor = convertToHex(activeColor);
+                updateSVGColors(suffix, activeColor);
+
+                // ── Build card ──
+                const card = document.createElement('div');
+                card.className = 'color-group';
+                card.dataset.suffix = suffix;
+
+                const handle = document.createElement('div');
+                handle.className = 'drag-handle';
+                card.appendChild(handle);
+
+                const labelEl = document.createElement('label');
+                const flossHTML = incomingFlossCodes[index]
+                    ? `<span class="floss-code">${incomingFlossCodes[index]}</span>`
+                    : '';
+                labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossHTML}`;
+                card.appendChild(labelEl);
+
+                const inputRow = document.createElement('div');
+                inputRow.className = 'input-row';
+
+                const picker = document.createElement('input');
+                picker.type = 'color';
+                picker.value = activeColor;
+
+                const textField = document.createElement('input');
+                textField.type = 'text';
+                textField.value = activeColor.toUpperCase();
+
+                bindInputEvents(card, suffix, picker, textField);
+                inputRow.appendChild(picker);
+                inputRow.appendChild(textField);
+                card.appendChild(inputRow);
+                controls.appendChild(card);
+
+                initDrag(card);
             });
         }
 
         function updateSVGColors(suffix, newColor) {
-            const svgs = document.querySelectorAll('#svgPreview svg');
-            svgs.forEach(svg => {
-                const styles = svg.querySelectorAll('style');
-                styles.forEach(styleTag => {
+            document.querySelectorAll('#svgPreview svg').forEach(svg => {
+                svg.querySelectorAll('style').forEach(styleTag => {
                     let css = styleTag.textContent;
-                    const strokeRegex = new RegExp(`(\\.s1-${suffix}\\{stroke:)([^}]+)(\\})`, 'g');
-                    const fillRegex = new RegExp(`(\\.kk-${suffix}\\{fill:)([^}]+)(\\})`, 'g');
-                    const previewKRegex = new RegExp(`(\\.k-${suffix}\\{fill:)([^}]+)(\\})`, 'g');
-                    const previewSRegex = new RegExp(`(\\.s-${suffix}\\{fill:)([^}]+)(\\})`, 'g');
-                    css = css.replace(strokeRegex, `$1${newColor}$3`)
-                        .replace(fillRegex, `$1${newColor}$3`)
-                        .replace(previewKRegex, `$1${newColor}$3`)
-                        .replace(previewSRegex, `$1${newColor}$3`);
+                    css = css
+                        .replace(new RegExp(`(\\.s1-${suffix}\\{stroke:)([^}]+)(\\})`, 'g'), `$1${newColor}$3`)
+                        .replace(new RegExp(`(\\.kk-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${newColor}$3`)
+                        .replace(new RegExp(`(\\.k-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${newColor}$3`)
+                        .replace(new RegExp(`(\\.s-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${newColor}$3`);
                     styleTag.textContent = css;
                 });
             });
