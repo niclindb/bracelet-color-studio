@@ -172,7 +172,7 @@
             <form id="designForm" method="POST" action="/submit-design">
                 <div class="input-group">
                     <label for="design_number">Design Number</label>
-                    <input type="number" id="design_number" name="design_number" placeholder="e.g. 1024"
+                    <input type="number" id="design_number" name="design_number" placeholder="e.g. 1024" value="{{ design }}"
                         inputmode="numeric" pattern="[0-9]*" required>
                 </div>
                 <button type="submit" id="submitDesign">Initialize Design</button>

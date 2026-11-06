@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bracelet Color Studio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <style>
         :root {
@@ -219,6 +220,7 @@
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            font-family: inherit;
         }
 
         .btn-secondary:hover {
@@ -264,6 +266,36 @@
             height: auto !important;
         }
 
+        .swap-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .swap-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 30px;
+            height: 24px;
+            font-size: 10px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .swap-btn:hover:not(:disabled),
+        .swap-btn:focus-visible {
+            color: #fff;
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .swap-btn:disabled {
+            opacity: 0.25;
+            cursor: default;
+        }
+
         .floss-code {
             font-size: 0.7rem;
             color: var(--text-dim);
@@ -294,7 +326,8 @@
             <h2>Pattern Editor</h2>
             <div class="header-actions">
                 <a class="btn-secondary" href="{{ url_for('index') }}">Change Design</a>
-                <button class="btn-primary" onclick="colorGenerator()">Smart Palette</button>
+                <button class="btn-secondary" id="copyLinkBtn" type="button">Copy Link</button>
+                <button class="btn-primary" id="smartPaletteBtn" type="button">Smart Palette</button>
             </div>
         </header>
 
@@ -308,13 +341,6 @@
             <p style="color: var(--text-dim);">No design loaded.</p>
             {% endif %}
         </div>
-
-        <div id="hexCodesContainer" style="display:none;">
-            {% for hex in hex_codes %}<span class="hex-value">{{ hex }}</span>{% endfor %}
-        </div>
-        <div id="flossCodesContainer" style="display:none;">
-            {% for floss in floss_codes %}<span class="floss-value">{{ floss }}</span>{% endfor %}
-        </div>
     </div>
 
     <div id="drag-ghost">
@@ -324,6 +350,12 @@
 
     <script>
         const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
+        const DESIGN_NUMBER = {{ design_number | tojson }};
+        const INCOMING_HEX_CODES = {{ hex_codes | tojson }};
+        const DMC = {{ dmc_colors | tojson }};
+        const DMC_HEXES = Object.keys(DMC);
+
+        const controls = document.getElementById('controls');
         const ghost = document.getElementById('drag-ghost');
         const ghostSwatch = document.getElementById('ghost-swatch');
         const ghostLabel = document.getElementById('ghost-label');
@@ -338,10 +370,79 @@
             offsetY: 0,
         };
 
+        // ── Helpers ──────────────────────────────────────────────
+        function getCards() {
+            return [...controls.querySelectorAll('.color-group')];
+        }
+
+        function nearestDmc(hex) {
+            const key = hex.toLowerCase();
+            if (DMC[key]) return { code: DMC[key], exact: true };
+            let best = null, bestDist = Infinity;
+            DMC_HEXES.forEach(h => {
+                const d = chroma.deltaE(key, h);
+                if (d < bestDist) { bestDist = d; best = h; }
+            });
+            return { code: DMC[best], exact: false };
+        }
+
+        function currentHexCodes() {
+            // Ordered by color letter (A, B, C...) to match the hex_codes URL format
+            const codes = [];
+            getCards().forEach(card => {
+                const i = COLOR_SUFFIXES.indexOf(card.dataset.suffix);
+                codes[i] = card.querySelector('input[type="color"]').value.replace('#', '');
+            });
+            return codes.filter(Boolean).join(',');
+        }
+
+        function editorUrl() {
+            return `/design/${DESIGN_NUMBER}?hex_codes=${currentHexCodes()}`;
+        }
+
+        // Keep the URL in step with the colors so refresh, Back and shared links keep edits
+        function syncUrl() {
+            history.replaceState(null, '', editorUrl());
+        }
+
+        function updateCardLabel(card) {
+            const suffix = card.dataset.suffix.toUpperCase();
+            card.querySelector('.color-name').textContent = `Color ${suffix}`;
+            const buttons = card.querySelectorAll('.swap-btn');
+            buttons[0].setAttribute('aria-label', `Swap Color ${suffix} with the color before it`);
+            buttons[1].setAttribute('aria-label', `Swap Color ${suffix} with the color after it`);
+        }
+
+        function updateFloss(card, color) {
+            const span = card.querySelector('.floss-code');
+            const { code, exact } = nearestDmc(color);
+            span.textContent = `${exact ? '' : '≈ '}DMC ${code}`;
+            span.title = exact ? 'Exact DMC floss match' : 'Closest DMC floss color';
+        }
+
+        function setCardColor(card, color, { fromText = false } = {}) {
+            const picker = card.querySelector('input[type="color"]');
+            const textField = card.querySelector('input[type="text"]');
+            picker.value = color;
+            if (!fromText) textField.value = color.toUpperCase();
+            updateSVGColors(card.dataset.suffix, color);
+            updateFloss(card, color);
+        }
+
+        function updateSwapButtons() {
+            const cards = getCards();
+            cards.forEach((card, i) => {
+                const [prev, next] = card.querySelectorAll('.swap-btn');
+                prev.disabled = i === 0;
+                next.disabled = i === cards.length - 1;
+            });
+        }
+
+        // ── Drag to swap ─────────────────────────────────────────
         function initDrag(card) {
             card.addEventListener('pointerdown', (e) => {
-                // Ignore if clicking inputs
-                if (e.target.tagName.toLowerCase() === 'input') return;
+                // Let inputs and buttons inside the card work normally
+                if (e.target.closest('input, button')) return;
                 if (e.button !== 0 && e.button !== undefined) return;
 
                 e.preventDefault();
@@ -431,57 +532,77 @@
             rebindAllSuffixes();
         }
 
+        // After a swap, each card takes the color letter of its new position
         function rebindAllSuffixes() {
-            const cards = [...document.querySelectorAll('#controls .color-group')];
-            cards.forEach((card, i) => {
-                const suffix = COLOR_SUFFIXES[i];
-                const currentColor = card.querySelector('input[type="color"]').value;
-                card.dataset.suffix = suffix;
-
-                const labelEl = card.querySelector('label');
-                if (labelEl) {
-                    const flossSpan = labelEl.querySelector('.floss-code');
-                    const flossHTML = flossSpan ? flossSpan.outerHTML : '';
-                    labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossHTML}`;
-                }
-
-                const picker = card.querySelector('input[type="color"]');
-                const textField = card.querySelector('input[type="text"]');
-                const newPicker = picker.cloneNode(true);
-                const newText = textField.cloneNode(true);
-                picker.replaceWith(newPicker);
-                textField.replaceWith(newText);
-
-                bindInputEvents(card, suffix, newPicker, newText);
-                updateSVGColors(suffix, currentColor);
+            getCards().forEach((card, i) => {
+                card.dataset.suffix = COLOR_SUFFIXES[i];
+                updateCardLabel(card);
+                updateSVGColors(card.dataset.suffix, card.querySelector('input[type="color"]').value);
             });
+            updateSwapButtons();
+            syncUrl();
         }
 
-        function bindInputEvents(card, suffix, picker, textField) {
-            picker.addEventListener('input', (e) => {
-                const color = e.target.value;
-                textField.value = color.toUpperCase();
-                updateSVGColors(suffix, color);
-            });
+        // ── Swap with buttons (keyboard and tap friendly) ────────
+        function onSwapButton(card, dir) {
+            const cards = getCards();
+            const i = cards.indexOf(card);
+            const other = cards[i + dir];
+            if (!other) return;
+            swapCards(card, other);
+            // Keep focus on the moved card's button so repeated presses keep moving it
+            const btn = card.querySelectorAll('.swap-btn')[dir < 0 ? 0 : 1];
+            (btn.disabled ? card.querySelectorAll('.swap-btn')[dir < 0 ? 1 : 0] : btn).focus();
+        }
 
-            textField.addEventListener('input', (e) => {
-                let color = e.target.value;
+        // ── Build the color cards ────────────────────────────────
+        function createCard(suffix, color) {
+            const card = document.createElement('div');
+            card.className = 'color-group';
+            card.dataset.suffix = suffix;
+            card.innerHTML = `
+                <label><span class="color-name"></span><span class="floss-code"></span></label>
+                <div class="input-row">
+                    <input type="color" aria-label="Pick color">
+                    <input type="text" aria-label="Hex code" spellcheck="false" autocomplete="off">
+                </div>
+                <div class="swap-row">
+                    <button type="button" class="swap-btn" data-dir="-1">&#9664;</button>
+                    <button type="button" class="swap-btn" data-dir="1">&#9654;</button>
+                </div>`;
+
+            const picker = card.querySelector('input[type="color"]');
+            const textField = card.querySelector('input[type="text"]');
+
+            picker.addEventListener('input', () => {
+                setCardColor(card, picker.value);
+            });
+            picker.addEventListener('change', syncUrl);
+
+            textField.addEventListener('input', () => {
+                let color = textField.value.trim();
                 if (!color.startsWith('#')) color = '#' + color;
-                if (/(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)) {
-                    picker.value = color;
-                    updateSVGColors(suffix, color);
+                if (/^#([0-9A-F]{6}|[0-9A-F]{3})$/i.test(color)) {
+                    setCardColor(card, chroma(color).hex(), { fromText: true });
+                    syncUrl();
                 }
             });
+            textField.addEventListener('blur', () => {
+                textField.value = picker.value.toUpperCase();
+            });
+
+            card.querySelectorAll('.swap-btn').forEach(btn => {
+                btn.addEventListener('click', () => onSwapButton(card, Number(btn.dataset.dir)));
+            });
+
+            updateCardLabel(card);
+            setCardColor(card, color);
+            initDrag(card);
+            return card;
         }
 
         function processSVG() {
-            const hexElements = document.querySelectorAll('#hexCodesContainer .hex-value');
-            const incomingHexCodes = Array.from(hexElements).map(el => el.textContent.trim());
-            const flossElements = document.querySelectorAll('#flossCodesContainer .floss-value');
-            const incomingFlossCodes = Array.from(flossElements).map(el => el.textContent.trim());
-
             const previewArea = document.getElementById('svgPreview');
-            const controls = document.getElementById('controls');
             const svgs = previewArea.querySelectorAll('svg');
 
             if (svgs.length === 0) return;
@@ -507,38 +628,10 @@
                     if (match) svgOriginal = match[1].trim();
                 }
 
-                let activeColor = incomingHexCodes[index] || svgOriginal;
-                activeColor = convertToHex(activeColor);
-                updateSVGColors(suffix, activeColor);
-
-                const card = document.createElement('div');
-                card.className = 'color-group';
-                card.dataset.suffix = suffix;
-
-                const labelEl = document.createElement('label');
-                const flossHTML = incomingFlossCodes[index] ? `<span class="floss-code">${incomingFlossCodes[index]}</span>` : '';
-                labelEl.innerHTML = `Color ${suffix.toUpperCase()} ${flossHTML}`;
-                card.appendChild(labelEl);
-
-                const inputRow = document.createElement('div');
-                inputRow.className = 'input-row';
-
-                const picker = document.createElement('input');
-                picker.type = 'color';
-                picker.value = activeColor;
-
-                const textField = document.createElement('input');
-                textField.type = 'text';
-                textField.value = activeColor.toUpperCase();
-
-                bindInputEvents(card, suffix, picker, textField);
-                inputRow.appendChild(picker);
-                inputRow.appendChild(textField);
-                card.appendChild(inputRow);
-                controls.appendChild(card);
-
-                initDrag(card);
+                const activeColor = convertToHex(INCOMING_HEX_CODES[index] || svgOriginal);
+                controls.appendChild(createCard(suffix, activeColor));
             });
+            updateSwapButtons();
         }
 
         function updateSVGColors(suffix, newColor) {
@@ -561,23 +654,24 @@
             return ctx.fillStyle;
         }
 
-        function colorGenerator() {
-            const controls = document.getElementById('controls');
-            const colorCount = controls.childElementCount;
-            const svgs = document.querySelectorAll('#svgPreview svg');
-            const previewSvg = svgs.length > 0 ? svgs[0].outerHTML : '';
+        // ── Header buttons ───────────────────────────────────────
+        document.getElementById('smartPaletteBtn').addEventListener('click', () => {
+            const count = getCards().length;
+            window.location.href = `/design/${DESIGN_NUMBER}/palette?n=${count}&hex_codes=${currentHexCodes()}`;
+        });
 
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/generate-colors/${colorCount}`;
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'preview_svg';
-            hiddenInput.value = previewSvg;
-            form.appendChild(hiddenInput);
-            document.body.appendChild(form);
-            form.submit();
-        }
+        document.getElementById('copyLinkBtn').addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const url = new URL(editorUrl(), window.location.origin).href;
+            syncUrl();
+            navigator.clipboard.writeText(url).then(() => {
+                btn.textContent = 'Copied!';
+            }).catch(() => {
+                window.prompt('Copy this link:', url);
+            }).finally(() => {
+                setTimeout(() => btn.textContent = 'Copy Link', 1500);
+            });
+        });
 
         window.onload = processSVG;
     </script>

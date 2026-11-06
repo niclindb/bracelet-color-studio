@@ -253,6 +253,38 @@
             flex-shrink: 0;
         }
 
+        .back-link {
+            flex-basis: 100%;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .palette-preview {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 44px;
+            margin-top: 8px;
+            padding: 6px;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .palette-preview img {
+            height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
         /* ── Palette swatches ── */
         .palette {
             display: flex;
@@ -312,6 +344,7 @@
     <div class="container">
 
         <div class="controls">
+            <a class="back-link" href="{{ back_url }}">&larr; Back to editor</a>
             <input type="color" id="picker">
             <input type="text" id="hexInput" placeholder="">
             <button id="randomBtn">Shuffle</button>
@@ -340,17 +373,36 @@
         <div id="outputs"></div>
     </div>
 
-    <div id="config" data-num-colors="{{ num_colors | default(5) }}" style="display:none;"></div>
-    <div id="design_numer" data-design-number="{{ design_number }}" style="display:none;"></div>
+    <template id="previewTemplate">{{ preview_svg | safe }}</template>
 
     <script>
-        const allowedColorsArray = JSON.parse('{{ colors | tojson }}');
+        const allowedColorsArray = {{ colors | tojson }};
+        const DESIGN_NUMBER = {{ design_number | tojson }};
+        const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
 
         const picker = document.getElementById('picker');
         const hexInput = document.getElementById('hexInput');
         const randomBtn = document.getElementById('randomBtn');
         const outputs = document.getElementById('outputs');
-        const numColors = parseInt(document.getElementById('config').getAttribute('data-num-colors')) || 5;
+        const numColors = {{ num_colors | tojson }};
+
+        // The design's bracelet preview, serialized once so each palette can be drawn on it
+        const previewSvgText = (() => {
+            const svg = document.getElementById('previewTemplate').content.querySelector('svg');
+            return svg ? new XMLSerializer().serializeToString(svg) : '';
+        })();
+
+        function recoloredPreviewUrl(colors) {
+            let text = previewSvgText;
+            colors.forEach((color, i) => {
+                const suffix = COLOR_SUFFIXES[i];
+                text = text
+                    .replace(new RegExp(`(\\.kk?-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${color}$3`)
+                    .replace(new RegExp(`(\\.s-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${color}$3`)
+                    .replace(new RegExp(`(\\.s1-${suffix}\\{stroke:)([^}]+)(\\})`, 'g'), `$1${color}$3`);
+            });
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(text);
+        }
 
         let activeCategory = 'all';
 
@@ -362,7 +414,8 @@
             let nearest = null, minDist = Infinity;
             allowedColorsArray.forEach(c => {
                 if (exclude.includes(c.toUpperCase())) return;
-                const dist = chroma.distance(target, chroma(c), 'rgb');
+                // deltaE measures how different two colors look, so floss matches look right
+                const dist = chroma.deltaE(target, c);
                 if (dist < minDist) { minDist = dist; nearest = c; }
             });
             return nearest || allowedColorsArray[0];
@@ -725,8 +778,7 @@
             if (!chroma.valid(hex)) return;
 
             const useDMC = document.getElementById('dmcToggle').checked;
-            const designNumber = document.getElementById('design_numer').getAttribute('data-design-number');
-
+    
             const categories = [
                 { key: 'harmony', label: 'Harmony' },
                 { key: 'tone', label: 'Tone & Lightness' },
@@ -768,7 +820,7 @@
                     }
 
                     const urlHexParam = colors.map(h => h.replace('#', '')).join(',');
-                    const link = `/design/${designNumber}?hex_codes=${urlHexParam}`;
+                    const link = `/design/${DESIGN_NUMBER}?hex_codes=${urlHexParam}`;
 
                     const row = document.createElement('div');
                     row.className = 'row';
@@ -794,6 +846,18 @@
                         };
                         pDiv.appendChild(swatch);
                     });
+
+                    if (previewSvgText) {
+                        const preview = document.createElement('a');
+                        preview.className = 'palette-preview';
+                        preview.href = link;
+                        preview.title = 'Apply this palette';
+                        const img = document.createElement('img');
+                        img.alt = 'Bracelet preview with this palette';
+                        img.src = recoloredPreviewUrl(colors);
+                        preview.appendChild(img);
+                        row.appendChild(preview);
+                    }
 
                     group.appendChild(row);
                 });
@@ -833,23 +897,21 @@
             }
         };
 
-        randomBtn.onclick = () => {
+        function setRandomColor() {
             const useDMC = document.getElementById('dmcToggle').checked;
             let newColor = chroma.random().saturate(1.5).hex();
             if (useDMC) newColor = getNearestAllowedColor(newColor);
             picker.value = chroma(newColor).hex();
             hexInput.value = chroma(newColor).hex().toUpperCase();
             generate();
-        };
+        }
+
+        randomBtn.onclick = setRandomColor;
 
         document.getElementById('dmcToggle').onchange = generate;
 
-        window.onload = () => {
-            const initColor = picker.value || '#e05c5c';
-            picker.value = initColor;
-            hexInput.value = initColor.toUpperCase();
-            generate();
-        };
+        // Start from a fresh random color each time the page loads
+        window.onload = setRandomColor;
     </script>
 </body>
 
