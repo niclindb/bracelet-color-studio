@@ -2,6 +2,8 @@
 
 A small Flask web app for recoloring friendship bracelet patterns from [braceletbook.com](https://www.braceletbook.com/). Load a pattern by its design number, change any of its colors, and try generated palettes to see how the bracelet looks before you pick your floss.
 
+**Live app:** https://bracelet-color-studio-lindberg-dev-projects.vercel.app/
+
 ## Features
 
 - **Load any normal pattern by number.** Enter a braceletbook.com design number and the app fetches its pattern and preview SVGs, with the watermark text removed.
@@ -39,10 +41,11 @@ Then open http://127.0.0.1:5000. Running `python app.py` also works.
 
 ## Usage
 
-1. On the home page, enter a design number (for example `1024`) and click **Initialize Design**.
+1. Open the [live app](https://bracelet-color-studio-lindberg-dev-projects.vercel.app/) (or your local server). On the home page, enter a design number (for example `1024`) and click **Initialize Design**.
 2. In the **Pattern Editor**, change colors with the pickers or hex fields, and drag cards to rearrange colors.
 3. Click **Smart Palette** to generate palettes. Choose a base color, optionally turn on **Use DMC colors only**, and click **Apply →** on a palette you like.
 4. You land back in the editor with that palette applied. The URL keeps the colors (`/design/<number>?hex_codes=...`), so you can bookmark or share it.
+5. Click **Change Design** in the editor to go back and load a different pattern.
 
 ## Routes
 
