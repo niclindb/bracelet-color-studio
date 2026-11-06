@@ -5,97 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Bracelet Color Studio</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}" sizes="96x96">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+{% include '_head.html' %}
     <style>
-        :root {
-            --bg: #f4f5f8;
-            --card: #ffffff;
-            --ink: #111827;
-            --ink-soft: #374151;
-            --muted: #4b5563;
-            --subtle: #6b7280;
-            --line: #e5e7eb;
-            --field-line: #d1d5db;
-            --link: #be185d;
-            --link-hover: #9d174d;
-            --gutter: clamp(16px, 5vw, 64px);
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            min-height: 100dvh;
-            background: var(--bg);
-            color: var(--ink);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        }
-
-        a { color: var(--link); }
-        a:hover { color: var(--link-hover); }
-
-        .wrap {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding-left: var(--gutter);
-            padding-right: var(--gutter);
-        }
-
-        /* Header */
-        header {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px 12px;
-            padding-top: 20px;
-            padding-bottom: 20px;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
-            font-size: 20px;
-            color: var(--ink);
-            text-decoration: none;
-        }
-
-        .brand:hover { color: var(--ink); }
-
-        .brand-mark {
-            width: 32px;
-            height: 32px;
-            border-radius: 9px;
-            background: var(--ink);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .nav-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--ink-soft);
-            text-decoration: none;
-            font-size: 15px;
-            padding: 12px 14px;
-            border-radius: 10px;
-        }
-
-        .nav-link:hover {
-            color: var(--ink);
-            background: rgba(17, 24, 39, 0.05);
-        }
 
         /* Hero */
         .hero {
@@ -382,62 +293,10 @@
             color: var(--subtle);
         }
 
-        /* Footer */
-        footer {
-            border-top: 1px solid var(--line);
-            padding-top: 24px;
-            padding-bottom: 32px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: 8px 16px;
-            font-size: 14px;
-            color: var(--subtle);
-        }
-
-        footer strong { color: var(--ink-soft); font-weight: 600; }
-
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-
-        body > * {
-            width: 100%;
-            min-width: 0;
-        }
-
-        body > footer { margin-top: auto; }
-
         @media (max-width: 560px) {
-            header {
-                flex-wrap: nowrap;
-                padding-top: 14px;
-                padding-bottom: 14px;
-            }
-
-            .brand { font-size: 17px; gap: 8px; white-space: nowrap; }
-            .brand-mark { width: 28px; height: 28px; border-radius: 8px; }
-            .nav-link {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                min-height: 44px;
-                padding: 0 12px;
-                font-size: 14px;
-                font-weight: 600;
-                border: 1px solid var(--field-line);
-                border-radius: 999px;
-                background: var(--card);
-                white-space: nowrap;
-            }
-            .nav-wide { display: none; }
-        }
-
-        @media (max-width: 420px) {
-            .brand-long { display: none; }
             .hero { padding-top: 16px; }
         }
+
 
         @media (max-width: 480px) {
             .knot { width: 24px; height: 18px; }
@@ -447,27 +306,12 @@
 </head>
 
 <body>
-    <header class="wrap">
-        <a class="brand" href="/">
-            <span class="brand-mark">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-            </span>
-            <span><span class="brand-long">Bracelet </span>Color Studio</span>
-        </a>
-        <nav>
-            <a class="nav-link" href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener"><span><span class="nav-wide">Browse </span>braceletbook</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg></a>
-        </nav>
-    </header>
+{% include '_header.html' %}
 
     <main class="wrap hero">
         <div class="hero-copy">
             <h1>Recolor any braceletbook pattern.</h1>
-            <p class="lede">Enter a design number from <a href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">braceletbook.com</a> to swap in DMC thread colors, or let the color generator suggest new combinations.</p>
+            <p class="lede">Enter a design number from <a href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">braceletbook.com</a> to swap in DMC thread colors, or let the <a href="{{ url_for('palette_generator') }}">palette generator</a> suggest new combinations.</p>
 
             <form id="designForm" method="POST" action="/submit-design">
                 <label for="design_number">Paste a design number or braceletbook link</label>
@@ -518,10 +362,7 @@
         <div class="recent-grid" id="recentList"></div>
     </section>
 
-    <footer class="wrap">
-        <span>Bracelet Color Studio</span>
-        <span>&copy; 2026 <strong>Lindberg Dev</strong></span>
-    </footer>
+{% include '_footer.html' %}
 
     <script>
         // Show a loading state while braceletbook.com is fetched

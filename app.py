@@ -187,13 +187,30 @@ def palette(design_number, kind):
     )
 
 
+@app.route('/palette-generator')
+def palette_generator():
+    """The palette generator on its own, without a design loaded."""
+    num_colors = request.args.get('n', type=int) or 5
+    num_colors = max(1, min(num_colors, 16))
+    return template(
+        'colors.html',
+        num_colors=num_colors,
+        design_number=None,
+        base_path=None,
+        preview_svg='',
+        current_colors=[],
+        back_url=url_for('index'),
+        colors=list(dmc_colors),
+    )
+
+
 @app.route('/generate-colors/<int:num_colors>', methods=['GET', 'POST'])
 def colors(num_colors):
-    # Old color generator URL, kept so existing links and bookmarks still work.
+    # Old palette generator URL, kept so existing links and bookmarks still work.
     referrer = request.referrer or ''
     match = re.search(r'/design/(\d+)', referrer)
     if not match:
-        return redirect(url_for('index'))
+        return redirect(url_for('palette_generator', n=num_colors))
     return redirect(f"/design/{int(match.group(1))}/palette?n={num_colors}")
 
 

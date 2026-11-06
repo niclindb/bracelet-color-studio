@@ -129,7 +129,14 @@ def test_palette_clamps_color_count(client, braceletbook):
 def test_old_palette_url_without_referrer_does_not_crash(client):
     response = client.get('/generate-colors/5')
     assert response.status_code == 302
-    assert response.headers['Location'] == '/'
+    assert response.headers['Location'] == '/palette-generator?n=5'
+
+
+def test_standalone_palette_generator(client):
+    response = client.get('/palette-generator?n=4')
+    assert response.status_code == 200
+    assert b'Palette Generator' in response.data
+    assert b'const numColors = 4' in response.data
 
 
 def test_old_palette_url_with_referrer_redirects(client):
