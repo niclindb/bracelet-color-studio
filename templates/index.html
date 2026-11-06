@@ -80,6 +80,9 @@
         }
 
         .nav-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             color: var(--ink-soft);
             text-decoration: none;
             font-size: 15px;
@@ -377,8 +380,61 @@
             color: var(--subtle);
         }
 
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--line);
+            padding-top: 24px;
+            padding-bottom: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px 16px;
+            font-size: 14px;
+            color: var(--subtle);
+        }
+
+        footer strong { color: var(--ink-soft); font-weight: 600; }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        body > * {
+            width: 100%;
+            min-width: 0;
+        }
+
+        body > footer { margin-top: auto; }
+
         @media (max-width: 560px) {
-            header nav { display: none; }
+            header {
+                flex-wrap: nowrap;
+                padding-top: 14px;
+                padding-bottom: 14px;
+            }
+
+            .brand { font-size: 17px; gap: 8px; white-space: nowrap; }
+            .brand-mark { width: 28px; height: 28px; border-radius: 8px; }
+            .nav-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                min-height: 44px;
+                padding: 0 12px;
+                font-size: 14px;
+                font-weight: 600;
+                border: 1px solid var(--field-line);
+                border-radius: 999px;
+                background: var(--card);
+                white-space: nowrap;
+            }
+            .nav-wide { display: none; }
+        }
+
+        @media (max-width: 420px) {
+            .brand-long { display: none; }
+            .hero { padding-top: 16px; }
         }
 
         @media (max-width: 480px) {
@@ -397,10 +453,12 @@
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
             </span>
-            Bracelet Color Studio
+            <span><span class="brand-long">Bracelet </span>Color Studio</span>
         </a>
         <nav>
-            <a class="nav-link" href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">Browse braceletbook</a>
+            <a class="nav-link" href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener"><span><span class="nav-wide">Browse </span>braceletbook</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg></a>
         </nav>
     </header>
 
@@ -457,6 +515,11 @@
         <h2>Pick up where you left off</h2>
         <div class="recent-grid" id="recentList"></div>
     </section>
+
+    <footer class="wrap">
+        <span>Bracelet Color Studio</span>
+        <span>Made by <strong>Lindberg Dev</strong></span>
+    </footer>
 
     <script>
         // Show a loading state while braceletbook.com is fetched
