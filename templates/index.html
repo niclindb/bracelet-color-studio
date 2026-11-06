@@ -154,44 +154,6 @@
             }
         }
 
-        .type-toggle {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .type-toggle label {
-            flex: 1;
-            margin: 0;
-            padding: 0;
-            cursor: pointer;
-        }
-
-        .type-toggle input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .type-toggle span {
-            display: block;
-            text-align: center;
-            padding: 10px;
-            border-radius: 12px;
-            border: 1px solid #3d445e;
-            color: var(--text-dim);
-        }
-
-        .type-toggle input:checked + span {
-            background: rgba(96, 165, 250, 0.15);
-            border-color: var(--accent);
-            color: #fff;
-        }
-
-        .type-toggle input:focus-visible + span {
-            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.35);
-        }
-
         .recent {
             margin-top: 28px;
             text-align: left;
@@ -269,10 +231,6 @@
             <p>Enter a design number from <a href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">braceletbook.com</a> to start your design</p>
 
             <form id="designForm" method="POST" action="/submit-design">
-                <div class="type-toggle" role="radiogroup" aria-label="Pattern type">
-                    <label><input type="radio" name="design_type" value="normal" {% if kind != 'alpha' %}checked{% endif %}><span>Normal</span></label>
-                    <label><input type="radio" name="design_type" value="alpha" {% if kind == 'alpha' %}checked{% endif %}><span>Alpha</span></label>
-                </div>
                 <div class="input-group">
                     <label for="design_number">Design Number</label>
                     <input type="number" id="design_number" name="design_number" placeholder="e.g. 1024" value="{{ design }}"

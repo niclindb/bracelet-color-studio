@@ -48,8 +48,8 @@ python -m pytest
 
 ## Usage
 
-1. Open the [live app](https://bracelet-color-studio.vercel.app/) (or your local server). On the home page, choose **Normal** or **Alpha**, enter a design number (for example `1024`) and click **Initialize Design**. Designs you've opened appear under **Recent designs**.
-2. In the **Pattern Editor**, change colors with the pickers or hex fields. Drag cards, or use the ◀ ▶ buttons, to rearrange colors. Each card shows the matching DMC floss number, or the closest one (≈). The URL updates as you edit, and **Copy Link** copies it. **Undo** (or Ctrl+Z) steps back through changes, and **Reset colors** restores the pattern's own colors.
+1. Open the [live app](https://bracelet-color-studio.vercel.app/) (or your local server). On the home page, enter a design number (for example `1024`) and click **Initialize Design**. Designs you've opened appear under **Recent designs**.
+2. In the **Pattern Editor**, change colors with the pickers or hex fields. Drag cards to rearrange colors. Tap the bracelet preview to see it larger. Each card shows the matching DMC floss number, or the closest one (≈). The URL updates as you edit, and **Copy Link** copies it. **Undo** (or Ctrl+Z) steps back through changes, and **Reset colors** restores the pattern's own colors.
 3. Click **Smart Palette** to generate palettes. It starts from a random base color; pick your own or hit **Shuffle**. Each palette is shown on your bracelet. Tap your current colors to lock the ones you want to keep; palettes then fill only the unlocked colors. Optionally turn on **Use DMC colors only**, and click **Apply →** on a palette you like.
 4. You land back in the editor with that palette applied. The URL keeps the colors (`/design/<number>?hex_codes=...`), so you can bookmark or share it.
 5. Click **Change Design** in the editor to go back and load a different pattern.
@@ -82,5 +82,5 @@ static/favicon.png     Favicon
 ## Notes
 
 - Patterns and artwork belong to braceletbook.com and their authors. This app only fetches them for personal recoloring.
-- If a design number can't be loaded, the home page shows an error. Normal and alpha patterns are supported.
+- If a design number can't be loaded, the home page shows an error. Normal and alpha patterns are supported: the app tries the number as a normal pattern first, then as an alpha pattern.
 - The palette generator was inspired by [Muzli Colors](https://colors.muz.li/).

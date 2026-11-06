@@ -88,7 +88,7 @@ def test_unknown_design_redirects_home_with_error(client, braceletbook):
     assert response.headers['Location'] == '/?error=not_found&design=99999'
     page = client.get('/?error=not_found&design=99999')
     assert page.status_code == 404
-    assert b'normal patterns' in page.data
+    assert b'normal or alpha pattern' in page.data
     assert b'value="99999"' in page.data
 
 
@@ -127,9 +127,16 @@ def test_old_palette_url_with_referrer_redirects(client):
     assert response.headers['Location'] == '/design/1024/palette?n=5'
 
 
-def test_submit_alpha_design(client):
-    response = client.post('/submit-design', data={'design_number': '555', 'design_type': 'alpha'})
-    assert response.headers['Location'] == '/alpha/555'
+def test_alpha_number_redirects_to_alpha_editor(client, braceletbook):
+    # The home form always tries normal first; an alpha-only number lands on the alpha editor
+    assert client.post('/submit-design', data={'design_number': '555'}).headers['Location'] == '/design/555'
+    response = client.get('/design/555?hex_codes=ffffff')
+    assert response.headers['Location'] == '/alpha/555?hex_codes=ffffff'
+
+
+def test_alpha_palette_redirect_keeps_path(client, braceletbook):
+    response = client.get('/design/555/palette?n=1')
+    assert response.headers['Location'] == '/alpha/555/palette?n=1'
 
 
 def test_alpha_editor_without_preview(client, braceletbook):
@@ -149,9 +156,9 @@ def test_alpha_palette_uses_pattern_when_no_preview(client, braceletbook):
     assert 'const BASE_PATH = "/alpha/555";' in body
 
 
-def test_unknown_alpha_design_keeps_type(client, braceletbook):
+def test_unknown_number_checks_both_kinds(client, braceletbook):
     response = client.get('/alpha/777')
-    assert response.headers['Location'] == '/?error=not_found&design=777&kind=alpha'
-    page = client.get(response.headers['Location']).data.decode()
-    assert "braceletbook&#39;s alpha patterns" in page
-    assert 'value="alpha" checked' in page
+    assert response.headers['Location'] == '/?error=not_found&design=777'
+    assert any('/patterns/normal/777/' in url for url, _ in braceletbook)
+    assert any('/patterns/alpha/777/' in url for url, _ in braceletbook)
+    assert b'normal or alpha pattern' in client.get(response.headers['Location']).data

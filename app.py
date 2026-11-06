@@ -9,14 +9,13 @@ from dmc_dict import dmc_dict as dmc_colors
 app = Flask(__name__)
 
 BRACELETBOOK_URL = "https://www.braceletbook.com/patterns/{}/{}/"
-KINDS = ("normal", "alpha")
 REQUEST_TIMEOUT = 10  # seconds per request to braceletbook.com
 CACHE_TTL = 6 * 60 * 60  # keep fetched patterns for 6 hours
 CDN_CACHE_HEADER = "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400"
 
 ERRORS = {
     "invalid": "Please enter a design number, like 1024.",
-    "not_found": "We couldn't find that number in braceletbook's {kind} patterns. Check the number and pattern type, then try again.",
+    "not_found": "We couldn't find a normal or alpha pattern with that number on braceletbook.com. Check the number and try again.",
     "unavailable": "braceletbook.com didn't respond. Please try again in a minute.",
 }
 
@@ -81,15 +80,29 @@ def editor_path(kind, design_number):
 
 
 def load_or_redirect(design_number, kind):
-    """Fetch a design's SVGs, or return a redirect to the home page with an error."""
+    """Fetch a design's SVGs, or return a redirect.
+
+    Normal and alpha patterns have separate numbers on braceletbook.com. If the number
+    isn't a pattern of the requested kind but is one of the other kind, redirect to the
+    same page for that kind. Otherwise redirect home with an error.
+    """
     try:
         return fetch_svgs(design_number, kind), None
-    except PatternNotFound:
-        error = "not_found"
     except PatternUnavailable:
         error = "unavailable"
-    return None, redirect(url_for('index', error=error, design=design_number,
-                                  kind=kind if kind == 'alpha' else None))
+    except PatternNotFound:
+        other = 'alpha' if kind == 'normal' else 'normal'
+        try:
+            fetch_svgs(design_number, other)
+        except PatternNotFound:
+            error = "not_found"
+        except PatternUnavailable:
+            error = "unavailable"
+        else:
+            path = request.path.replace(editor_path(kind, design_number), editor_path(other, design_number), 1)
+            query = request.query_string.decode()
+            return None, redirect(path + ('?' + query if query else ''))
+    return None, redirect(url_for('index', error=error, design=design_number))
 
 
 def parse_hex_codes(raw):
@@ -104,19 +117,18 @@ def parse_hex_codes(raw):
 
 @app.route('/')
 def index():
-    kind = request.args.get('kind') if request.args.get('kind') in KINDS else 'normal'
-    error = ERRORS.get(request.args.get('error', ''), '').format(kind=kind) or None
+    error = ERRORS.get(request.args.get('error', ''))
     status = 404 if request.args.get('error') == 'not_found' else 200
-    return template('index.html', error=error, design=request.args.get('design', ''), kind=kind), status
+    return template('index.html', error=error, design=request.args.get('design', '')), status
 
 
 @app.route('/submit-design', methods=['POST'])
 def submit_design():
     design_number = (request.form.get('design_number') or '').strip()
-    kind = request.form.get('design_type') if request.form.get('design_type') in KINDS else 'normal'
     if not design_number.isdigit():
-        return redirect(url_for('index', error='invalid', kind=kind if kind == 'alpha' else None))
-    return redirect(editor_path(kind, int(design_number)))
+        return redirect(url_for('index', error='invalid'))
+    # Normal first; the editor redirects to /alpha/<n> if the number is an alpha pattern
+    return redirect(editor_path('normal', int(design_number)))
 
 
 @app.route('/design/<int:design_number>', defaults={'kind': 'normal'})
