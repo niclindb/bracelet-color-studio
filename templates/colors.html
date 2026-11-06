@@ -456,6 +456,7 @@
 
         // Spread n-1 colors symmetrically around base, then prepend base
         function symmetricAnalogous(base, n, spread = 60) {
+            if (n <= 0) return [];
             if (n === 1) return [base];
             const rest = n - 1;
             return [
@@ -807,6 +808,8 @@
                     let colors;
                     try {
                         colors = scheme.colors(hex, numColors).map(c => chroma(c).hex().toUpperCase());
+                        // Every palette must have exactly one color per color in the design
+                        if (colors.length !== numColors) throw new Error(`made ${colors.length} colors, expected ${numColors}`);
                     } catch (e) {
                         console.warn(scheme.name, e);
                         return;
