@@ -69,6 +69,16 @@
             line-height: 1.5;
         }
 
+        p a {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        p a:hover {
+            text-decoration: underline;
+        }
+
         .input-group {
             position: relative;
             margin-bottom: 24px;
@@ -167,7 +177,7 @@
                 </svg>
             </div>
             <h1>✦ Bracelet Color Studio</h1>
-            <p>Enter a design number from braceletbook.com to start your design</p>
+            <p>Enter a design number from <a href="https://www.braceletbook.com/patterns/normal/" target="_blank" rel="noopener">braceletbook.com</a> to start your design</p>
 
             <form id="designForm" method="POST" action="/submit-design">
                 <div class="input-group">
