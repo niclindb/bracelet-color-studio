@@ -189,5 +189,22 @@ a:hover { color: var(--link-hover); }
     }
 
     .nav-wide { display: none; }
+
+    .site-nav .nav-link {
+        min-height: 38px;
+        font-size: 13px;
+    }
+
+    /* Bigger page titles, smaller buttons on phones */
+    .page .page-title h1 {
+        font-size: 36px;
+    }
+
+    body .btn {
+        min-height: 38px;
+        padding: 0 12px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
 }
 
