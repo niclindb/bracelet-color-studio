@@ -1,11 +1,6 @@
     <header class="wrap site-header">
         <a class="brand" href="{{ url_for('index') }}">
-            <span class="brand-mark">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-            </span>
+            <img class="brand-mark" src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="32" height="32">
             <span><span class="brand-long">Bracelet </span>Color Studio</span>
         </a>
         <nav class="site-nav">

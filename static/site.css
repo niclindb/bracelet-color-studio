@@ -75,11 +75,7 @@ a:hover { color: var(--link-hover); }
     width: 32px;
     height: 32px;
     border-radius: 9px;
-    background: var(--ink);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     flex-shrink: 0;
 }
 
