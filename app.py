@@ -14,7 +14,7 @@ CACHE_TTL = 6 * 60 * 60  # keep fetched patterns for 6 hours
 CDN_CACHE_HEADER = "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400"
 
 ERRORS = {
-    "invalid": "Please enter a design number, like 1024.",
+    "invalid": "Please enter a design number like 1024, or paste a braceletbook.com pattern link.",
     "not_found": "We couldn't find a normal or alpha pattern with that number on braceletbook.com. Check the number and try again.",
     "unavailable": "braceletbook.com didn't respond. Please try again in a minute.",
 }
@@ -125,6 +125,11 @@ def index():
 @app.route('/submit-design', methods=['POST'])
 def submit_design():
     design_number = (request.form.get('design_number') or '').strip()
+    # A pasted braceletbook link like .../patterns/alpha/3318/ opens that pattern directly
+    link = re.search(r'braceletbook\.com/patterns/(normal|alpha)/(\d+)', design_number)
+    if link:
+        return redirect(editor_path(link.group(1), int(link.group(2))))
+    design_number = design_number.lstrip('#')
     if not design_number.isdigit():
         return redirect(url_for('index', error='invalid'))
     # Normal first; the editor redirects to /alpha/<n> if the number is an alpha pattern
@@ -184,7 +189,7 @@ def palette(design_number, kind):
 
 @app.route('/generate-colors/<int:num_colors>', methods=['GET', 'POST'])
 def colors(num_colors):
-    # Old Smart Palette URL, kept so existing links and bookmarks still work.
+    # Old color generator URL, kept so existing links and bookmarks still work.
     referrer = request.referrer or ''
     match = re.search(r'/design/(\d+)', referrer)
     if not match:

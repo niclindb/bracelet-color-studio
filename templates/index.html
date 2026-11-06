@@ -6,253 +6,482 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Bracelet Color Studio</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0b0f1a;
-            --panel: #161b2a;
-            --accent: #60a5fa;
-            --text-dim: #94a3b8;
+            --bg: #f4f5f8;
+            --card: #ffffff;
+            --ink: #111827;
+            --ink-soft: #374151;
+            --muted: #4b5563;
+            --subtle: #6b7280;
+            --line: #e5e7eb;
+            --field-line: #d1d5db;
+            --link: #be185d;
+            --link-hover: #9d174d;
+            --gutter: clamp(16px, 5vw, 64px);
         }
+
+        * { box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: #fff;
             margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            /* Using dynamic viewport height for mobile browser toolbars */
             min-height: 100dvh;
-            padding: 20px;
-            box-sizing: border-box;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
-        .hero-container {
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
+        a { color: var(--link); }
+        a:hover { color: var(--link-hover); }
+
+        .wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding-left: var(--gutter);
+            padding-right: var(--gutter);
         }
 
-        .design-card {
-            background: var(--panel);
-            /* Responsive padding: smaller on mobile, larger on desktop */
-            padding: clamp(30px, 8vw, 50px) clamp(20px, 5vw, 40px);
-            border-radius: 28px;
-            border: 1px solid #2d334a;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        /* Header */
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px 12px;
+            padding-top: 20px;
+            padding-bottom: 20px;
         }
 
-        .logo-mark {
-            width: 56px;
-            height: 56px;
-            background: var(--accent);
-            border-radius: 14px;
-            margin: 0 auto 24px;
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--ink);
+            text-decoration: none;
+        }
+
+        .brand:hover { color: var(--ink); }
+
+        .brand-mark {
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: var(--ink);
+            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 25px rgba(96, 165, 250, 0.4);
+        }
+
+        .nav-link {
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-size: 15px;
+            padding: 12px 14px;
+            border-radius: 10px;
+        }
+
+        .nav-link:hover {
+            color: var(--ink);
+            background: rgba(17, 24, 39, 0.05);
+        }
+
+        /* Hero */
+        .hero {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 48px 56px;
+            padding-top: 32px;
+            padding-bottom: 56px;
+        }
+
+        .hero-copy {
+            flex: 1 1 420px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
         h1 {
-            font-size: 1.6rem;
-            margin-bottom: 10px;
-            letter-spacing: -0.5px;
-            font-weight: 800;
+            margin: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(38px, 5vw, 60px);
+            line-height: 1.04;
+            letter-spacing: -1.5px;
+            font-weight: 700;
         }
 
-        p {
-            color: var(--text-dim);
-            font-size: 1rem;
-            margin-bottom: 35px;
-            line-height: 1.5;
+        .lede {
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.55;
+            color: var(--muted);
+            max-width: 480px;
         }
 
-        p a {
-            color: var(--accent);
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        p a:hover {
-            text-decoration: underline;
-        }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            text-align: left;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-dim);
-            margin-bottom: 10px;
-            padding-left: 4px;
-            font-weight: 600;
-        }
-
-        input[type="number"] {
-            width: 100%;
-            background: #1f263d;
-            border: 1px solid #3d445e;
-            color: #fff;
-            /* 16px font prevents iOS auto-zoom on focus */
-            padding: 16px;
-            border-radius: 14px;
-            font-size: 1.1rem;
-            outline: none;
-            box-sizing: border-box;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            appearance: none;
-        }
-
-        input[type="number"]:focus {
-            border-color: var(--accent);
-            background: #252d4a;
-            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
-        }
-
-        /* Hide number spinners for a cleaner look */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 520px;
             margin: 0;
         }
 
-        button {
-            width: 100%;
-            background: var(--accent);
-            color: #0b0f1a;
-            border: none;
-            padding: 18px;
-            border-radius: 14px;
-            font-weight: 800;
-            font-size: 1rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            transition: all 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        button:active {
-            transform: scale(0.98);
-            background: #93c5fd;
-        }
-
-        /* Hover only applies to devices with a mouse */
-        @media (hover: hover) {
-            button:hover {
-                background: #93c5fd;
-                transform: translateY(-2px);
-                box-shadow: 0 10px 20px -5px rgba(96, 165, 250, 0.3);
-            }
-        }
-
-        .recent {
-            margin-top: 28px;
-            text-align: left;
-        }
-
-        .recent-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-dim);
-            margin-bottom: 10px;
-            padding-left: 4px;
+        label {
+            font-size: 14px;
             font-weight: 600;
+            color: var(--ink-soft);
         }
 
-        .recent-list {
+        .field {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: var(--card);
+            border: 1px solid var(--field-line);
+            border-radius: 16px;
+            padding: 6px;
+            box-shadow: 0 8px 24px -12px rgba(17, 24, 39, 0.25);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .field:focus-within {
+            border-color: var(--ink);
+            box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.1);
+        }
+
+        .field input {
+            flex: 1 1 200px;
+            min-width: 0;
+            border: none;
+            background: transparent;
+            font: inherit;
+            /* 16px or more prevents iOS auto-zoom on focus */
+            font-size: 18px;
+            padding: 12px 14px;
+            outline: none;
+            color: var(--ink);
+        }
+
+        .field input::placeholder { color: var(--subtle); }
+
+        .field button {
+            flex: 1 0 auto;
+            min-height: 48px;
+            padding: 0 24px;
+            border: none;
+            border-radius: 12px;
+            background: var(--ink);
+            color: #fff;
+            font: inherit;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .field button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .field button:hover { background: #1f2937; }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2.5px solid rgba(255, 255, 255, 0.35);
+            border-top-color: #fff;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .loading .spinner { display: inline-block; }
+        .field button.loading { cursor: progress; background: #1f2937; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .spinner { animation-duration: 2s; }
+        }
+        .field button:active { transform: scale(0.98); }
+        .field button:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+
+        .hint {
+            font-size: 13px;
+            color: var(--subtle);
+        }
+
+        .error-msg {
+            max-width: 520px;
+            padding: 14px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        /* Bracelet showcase */
+        .hero-art {
+            flex: 1 1 380px;
+            min-width: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .showcase {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            padding: clamp(20px, 4vw, 28px);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 24px 28px;
+            align-items: center;
+            box-shadow: 0 30px 60px -30px rgba(17, 24, 39, 0.35);
+        }
+
+        .knots {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 3px;
         }
 
-        .recent-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            background: #1f263d;
-            border: 1px solid #3d445e;
-            color: #fff;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .recent-item:hover {
-            border-color: var(--accent);
-        }
-
-        .recent-dots {
+        .knot-row {
             display: flex;
             gap: 4px;
         }
 
-        .recent-dots span {
-            width: 14px;
-            height: 14px;
+        .knot-row.offset { padding-left: 17px; }
+
+        .knot {
+            width: 30px;
+            height: 22px;
             border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .error-msg {
-            margin-top: 25px;
+        .threads {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 120px;
+        }
+
+        .threads-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--subtle);
+            font-weight: 600;
+        }
+
+        .thread {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .swatch {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+        }
+
+        /* Recent designs */
+        .recent {
+            padding-bottom: 64px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .recent[hidden] { display: none; }
+
+        h2 {
+            margin: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .recent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .recent-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px;
             padding: 14px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            color: #f87171;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 500;
+            color: var(--ink);
+            text-decoration: none;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+
+        .recent-card:hover {
+            color: var(--ink);
+            border-color: var(--field-line);
+            box-shadow: 0 12px 24px -16px rgba(17, 24, 39, 0.35);
+        }
+
+        @media (hover: hover) {
+            .recent-card:hover { transform: translateY(-2px); }
+        }
+
+        .recent-thumb {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            flex-shrink: 0;
+            background: var(--line);
+        }
+
+        .recent-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .recent-name {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .recent-meta {
+            font-size: 13px;
+            color: var(--subtle);
+        }
+
+        @media (max-width: 560px) {
+            header nav { display: none; }
+        }
+
+        @media (max-width: 480px) {
+            .knot { width: 24px; height: 18px; }
+            .knot-row.offset { padding-left: 14px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="hero-container">
-        <div class="design-card">
-            <div class="logo-mark">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-                    stroke-linecap="round" stroke-linejoin="round">
+    <header class="wrap">
+        <a class="brand" href="/">
+            <span class="brand-mark">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
-            </div>
-            <h1>✦ Bracelet Color Studio</h1>
-            <p>Enter a design number from <a href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">braceletbook.com</a> to start your design</p>
+            </span>
+            Bracelet Color Studio
+        </a>
+        <nav>
+            <a class="nav-link" href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">Browse braceletbook</a>
+        </nav>
+    </header>
+
+    <main class="wrap hero">
+        <div class="hero-copy">
+            <h1>Recolor any braceletbook pattern.</h1>
+            <p class="lede">Enter a design number from <a href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">braceletbook.com</a> to swap in DMC thread colors, or let the color generator suggest new combinations.</p>
 
             <form id="designForm" method="POST" action="/submit-design">
-                <div class="input-group">
-                    <label for="design_number">Design Number</label>
-                    <input type="number" id="design_number" name="design_number" placeholder="e.g. 1024" value="{{ design }}"
-                        inputmode="numeric" pattern="[0-9]*" required>
+                <label for="design_number">Paste a design number or braceletbook link</label>
+                <div class="field">
+                    <input type="text" id="design_number" name="design_number" placeholder="e.g. 1024"
+                        value="{{ design }}" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+                    <button type="submit" id="submitDesign">
+                        <span class="spinner" aria-hidden="true"></span>
+                        <span class="btn-label">Load pattern</span>
+                    </button>
                 </div>
-                <button type="submit" id="submitDesign">Initialize Design</button>
+                <span class="hint">Normal and alpha patterns both work.</span>
             </form>
 
             {% if error %}
-            <div class="error-msg">
-                {{ error }}
-            </div>
+            <div class="error-msg" role="alert">{{ error }}</div>
             {% endif %}
+        </div>
 
-            <div class="recent" id="recent" hidden>
-                <div class="recent-title">Recent designs</div>
-                <div class="recent-list" id="recentList"></div>
+        {# A decorative chevron bracelet in four real DMC colors #}
+        {% set threads = [('e02876', '3804'), ('f4aed5', '3609'), ('fdf9cd', '3078'), ('14aad0', '3843')] %}
+        <div class="hero-art">
+            <div class="showcase">
+                <div class="knots" role="img" aria-label="Example chevron bracelet pattern">
+                    {% for r in range(14) %}
+                    {% set odd = r % 2 == 1 %}
+                    <div class="knot-row{{ ' offset' if odd }}">
+                        {% for c in range(7 if odd else 8) %}
+                        {% set x = c * 2 + (1 if odd else 0) %}
+                        {% set k = ((x - 7.5) | abs - 0.5) | int %}
+                        <span class="knot" style="background:#{{ threads[((k + r) // 2) % 4][0] }}"></span>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="threads">
+                    <span class="threads-title">Threads</span>
+                    {% for hex, dmc in threads %}
+                    <span class="thread"><span class="swatch" style="background:#{{ hex }}"></span>DMC {{ dmc }}</span>
+                    {% endfor %}
+                </div>
             </div>
         </div>
-    </div>
+    </main>
+
+    <section class="wrap recent" id="recent" hidden>
+        <h2>Pick up where you left off</h2>
+        <div class="recent-grid" id="recentList"></div>
+    </section>
 
     <script>
+        // Show a loading state while braceletbook.com is fetched
+        (function () {
+            const form = document.getElementById('designForm');
+            const button = document.getElementById('submitDesign');
+            const label = button.querySelector('.btn-label');
+            form.addEventListener('submit', () => {
+                // Disable after this tick so the submit itself still goes through
+                setTimeout(() => {
+                    button.classList.add('loading');
+                    button.disabled = true;
+                    button.setAttribute('aria-busy', 'true');
+                    label.textContent = 'Loading pattern…';
+                }, 0);
+            });
+            // Reset if the page is restored with the back button
+            window.addEventListener('pageshow', () => {
+                button.classList.remove('loading');
+                button.disabled = false;
+                button.removeAttribute('aria-busy');
+                label.textContent = 'Load pattern';
+            });
+        })();
+
         // Recent designs are saved in this browser by the pattern editor
         (function () {
             let recent = [];
@@ -262,28 +491,39 @@
                 return;
             }
             if (!Array.isArray(recent) || !recent.length) return;
-
             const list = document.getElementById('recentList');
             recent.slice(0, 6).forEach(item => {
                 if (!item || !/^\/(design|alpha)\/\d+$/.test(item.path || '')) return;
                 const codes = String(item.hexCodes || '').split(',').filter(c => /^[0-9a-f]{6}$/i.test(c));
+                const isAlpha = item.path.startsWith('/alpha');
+
                 const link = document.createElement('a');
-                link.className = 'recent-item';
+                link.className = 'recent-card';
                 link.href = item.path + (codes.length ? '?hex_codes=' + codes.join(',') : '');
 
+                const thumb = document.createElement('span');
+                thumb.className = 'recent-thumb';
+                thumb.setAttribute('aria-hidden', 'true');
+                if (codes.length) {
+                    const band = 9;
+                    thumb.style.background = 'repeating-linear-gradient(135deg, ' + codes.slice(0, 8)
+                        .map((c, i) => '#' + c + ' ' + (i * band) + 'px ' + ((i + 1) * band) + 'px').join(', ') + ')';
+                }
+                link.appendChild(thumb);
+
+                const info = document.createElement('span');
+                info.className = 'recent-info';
                 const name = document.createElement('span');
                 name.className = 'recent-name';
-                name.textContent = (item.path.startsWith('/alpha') ? 'Alpha ' : '#') + item.path.split('/').pop();
-                link.appendChild(name);
+                name.textContent = 'Design ' + item.path.split('/').pop();
+                const meta = document.createElement('span');
+                meta.className = 'recent-meta';
+                meta.textContent = (isAlpha ? 'Alpha' : 'Normal') +
+                    (codes.length ? ' · ' + codes.length + (codes.length === 1 ? ' color' : ' colors') : '');
+                info.appendChild(name);
+                info.appendChild(meta);
+                link.appendChild(info);
 
-                const dots = document.createElement('span');
-                dots.className = 'recent-dots';
-                codes.slice(0, 8).forEach(c => {
-                    const dot = document.createElement('span');
-                    dot.style.background = '#' + c;
-                    dots.appendChild(dot);
-                });
-                link.appendChild(dots);
                 list.appendChild(link);
             });
             if (list.children.length) document.getElementById('recent').hidden = false;
