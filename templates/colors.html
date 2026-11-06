@@ -321,15 +321,55 @@
             border: 1px solid rgba(0, 0, 0, 0.12);
         }
 
+        .chip-lock {
+            display: inline-flex;
+        }
+
         .chip-lock:empty {
             display: none;
         }
 
-        .swatch.is-locked::after {
-            content: '\1F512';
+        .lock-chip.is-empty {
+            cursor: default;
+            color: var(--muted);
+        }
+
+        .lock-chip.is-empty .chip-swatch {
+            background: transparent;
+            border-style: dashed;
+        }
+
+        /* Lock button in the corner of every palette swatch */
+        .swatch-lock {
             position: absolute;
             top: 6px;
-            font-size: 0.7rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: inherit;
+            opacity: 0.45;
+            cursor: pointer;
+            transition: opacity 0.15s, background 0.15s;
+        }
+
+        .swatch-lock:hover,
+        .swatch-lock:focus-visible {
+            opacity: 1;
+            background: rgba(127, 127, 127, 0.25);
+            outline: none;
+        }
+
+        .swatch-lock.is-locked {
+            opacity: 1;
+            background: rgba(127, 127, 127, 0.3);
         }
 
         .palette-preview {
@@ -454,7 +494,7 @@
             </div>
 
             <div class="lock-row" id="lockRow" hidden>
-                <div class="lock-title">Your colors &middot; tap to lock the ones you want to keep</div>
+                <div class="lock-title">Locked colors &middot; tap the lock on any color below to keep it in every palette</div>
                 <div class="lock-chips" id="lockChips"></div>
             </div>
 
@@ -476,7 +516,12 @@
         const BASE_PATH = {{ base_path | tojson }};
         // The editor's current colors, in card order, and which of them are locked
         const CURRENT_COLORS = {{ current_colors | tojson }}.map(c => chroma(c).hex().toUpperCase());
-        const locked = new Set();
+        // Locked slots: slot index -> the color it keeps in every palette
+        const locked = new Map();
+
+        // Simple outline lock icons (closed and open), drawn with the current text color
+        const LOCK_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+        const UNLOCK_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7"/></svg>';
         const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
 
         const picker = document.getElementById('picker');
@@ -887,49 +932,65 @@
         // ─────────────────────────────────────────────────────────────
         //  Render
         // ─────────────────────────────────────────────────────────────
-        // Locked slots keep the editor's color; the palette's colors fill the other slots in order
+        // Locked slots keep their color; the palette's colors fill the other slots in order
         function applyLocks(colors) {
             if (!locked.size) return colors;
             const free = colors.slice();
-            return colors.map((_, i) => locked.has(i) ? CURRENT_COLORS[i] : free.shift());
+            return colors.map((_, i) => locked.has(i) ? locked.get(i) : free.shift());
         }
 
+        function slotName(i) {
+            return 'Color ' + String.fromCharCode(65 + i);
+        }
+
+        function toggleLock(i, color) {
+            if (locked.get(i) === color) locked.delete(i);
+            else locked.set(i, color);
+            saveLocksToUrl();
+            renderLockChips();
+            generate();
+        }
+
+        // Top row: one chip per slot showing what's locked (or your editor color, ready to lock)
         function renderLockChips() {
+            const row = document.getElementById('lockRow');
             const chips = document.getElementById('lockChips');
+            const hasEditorColors = CURRENT_COLORS.length === numColors;
+            row.hidden = !hasEditorColors && !locked.size;
             chips.innerHTML = '';
-            CURRENT_COLORS.forEach((color, i) => {
+            for (let i = 0; i < numColors; i++) {
+                const color = locked.get(i) || (hasEditorColors ? CURRENT_COLORS[i] : null);
                 const chip = document.createElement('button');
                 chip.type = 'button';
-                chip.className = 'lock-chip' + (locked.has(i) ? ' is-locked' : '');
-                chip.style.setProperty('--chip', color);
+                chip.className = 'lock-chip' + (locked.has(i) ? ' is-locked' : '') + (color ? '' : ' is-empty');
+                chip.disabled = !color;
+                if (color) chip.style.setProperty('--chip', color);
                 chip.setAttribute('aria-pressed', locked.has(i));
-                chip.title = `${locked.has(i) ? 'Unlock' : 'Lock'} Color ${String.fromCharCode(65 + i)} (${color})`;
-                chip.innerHTML = `<span class="chip-swatch"></span><span class="chip-label">${String.fromCharCode(65 + i)}</span><span class="chip-lock">${locked.has(i) ? '&#128274;' : ''}</span>`;
-                chip.onclick = () => {
-                    locked.has(i) ? locked.delete(i) : locked.add(i);
-                    saveLocksToUrl();
-                    renderLockChips();
-                    generate();
-                };
+                chip.title = color ? `${locked.has(i) ? 'Unlock' : 'Lock'} ${slotName(i)} (${color})` : `${slotName(i)}: lock a color from any palette`;
+                chip.innerHTML = `<span class="chip-swatch"></span><span class="chip-label">${String.fromCharCode(65 + i)}</span><span class="chip-lock">${locked.has(i) ? LOCK_ICON : ''}</span>`;
+                if (color) chip.onclick = () => toggleLock(i, color);
                 chips.appendChild(chip);
-            });
+            }
         }
 
         function saveLocksToUrl() {
             const url = new URL(window.location.href);
-            if (locked.size) url.searchParams.set('lock', [...locked].sort((a, b) => a - b).join(','));
+            const value = [...locked.keys()].sort((a, b) => a - b)
+                .map(i => `${i}:${locked.get(i).replace('#', '')}`).join(',');
+            if (value) url.searchParams.set('lock', value);
             else url.searchParams.delete('lock');
-            history.replaceState(null, '', url.pathname + '?' + url.searchParams.toString().replace(/%2C/gi, ','));
+            history.replaceState(null, '', url.pathname + '?' + url.searchParams.toString().replace(/%2C/gi, ',').replace(/%3A/gi, ':'));
         }
 
-        if (CURRENT_COLORS.length === numColors) {
-            new URLSearchParams(window.location.search).get('lock')?.split(',').forEach(v => {
-                const i = parseInt(v, 10);
-                if (i >= 0 && i < numColors) locked.add(i);
-            });
-            document.getElementById('lockRow').hidden = false;
-            renderLockChips();
-        }
+        // Read locks from the URL: "2:ff0000" locks Color C to that color; a bare "2" locks your editor's Color C
+        (new URLSearchParams(window.location.search).get('lock') || '').split(',').forEach(part => {
+            const [idx, hex] = part.split(':');
+            const i = parseInt(idx, 10);
+            if (!(i >= 0 && i < numColors)) return;
+            if (hex && /^[0-9a-f]{6}$/i.test(hex)) locked.set(i, '#' + hex.toUpperCase());
+            else if (CURRENT_COLORS[i]) locked.set(i, CURRENT_COLORS[i]);
+        });
+        renderLockChips();
 
         function generate() {
             const hex = hexInput.value;
@@ -994,10 +1055,25 @@
                     const pDiv = row.querySelector('.palette');
                     colors.forEach((cHex, idx) => {
                         const swatch = document.createElement('div');
-                        swatch.className = 'swatch' + (locked.has(idx) ? ' is-locked' : '');
+                        swatch.className = 'swatch';
                         swatch.style.backgroundColor = cHex;
                         swatch.style.color = chroma(cHex).luminance() > 0.4 ? '#000' : '#fff';
                         swatch.innerHTML = `<span>${cHex}</span>`;
+
+                        const isLocked = locked.get(idx) === cHex;
+                        const lockBtn = document.createElement('button');
+                        lockBtn.type = 'button';
+                        lockBtn.className = 'swatch-lock' + (isLocked ? ' is-locked' : '');
+                        lockBtn.innerHTML = isLocked ? LOCK_ICON : UNLOCK_ICON;
+                        lockBtn.setAttribute('aria-pressed', isLocked);
+                        lockBtn.setAttribute('aria-label', `${isLocked ? 'Unlock' : 'Lock'} ${slotName(idx)} (${cHex})`);
+                        lockBtn.title = isLocked ? 'Unlock this color' : 'Keep this color in every palette';
+                        lockBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            toggleLock(idx, cHex);
+                        };
+                        swatch.appendChild(lockBtn);
+
                         swatch.onclick = () => {
                             navigator.clipboard.writeText(cHex).catch(() => { });
                             swatch.style.transform = 'scale(0.93)';
