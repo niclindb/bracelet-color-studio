@@ -392,10 +392,19 @@
             return svg ? new XMLSerializer().serializeToString(svg) : '';
         })();
 
+        // Color letters the bracelet preview actually draws with, in order (matches the editor)
+        const designSuffixes = (() => {
+            const svg = document.getElementById('previewTemplate').content.querySelector('svg');
+            if (!svg) return COLOR_SUFFIXES;
+            const used = COLOR_SUFFIXES.filter(s => svg.querySelector(`.s1-${s}, .s-${s}, .k-${s}, .kk-${s}`));
+            return used.length ? used : COLOR_SUFFIXES;
+        })();
+
         function recoloredPreviewUrl(colors) {
             let text = previewSvgText;
             colors.forEach((color, i) => {
-                const suffix = COLOR_SUFFIXES[i];
+                const suffix = designSuffixes[i];
+                if (!suffix) return;
                 text = text
                     .replace(new RegExp(`(\\.kk?-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${color}$3`)
                     .replace(new RegExp(`(\\.s-${suffix}\\{fill:)([^}]+)(\\})`, 'g'), `$1${color}$3`)
