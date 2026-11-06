@@ -2,7 +2,7 @@ import re
 import time
 
 import requests
-from flask import Flask, redirect, render_template as template, request, url_for
+from flask import Flask, redirect, render_template as template, request, send_from_directory, url_for
 
 from dmc_dict import dmc_dict as dmc_colors
 
@@ -113,6 +113,12 @@ def parse_hex_codes(raw):
         if re.fullmatch(r'[0-9a-f]{6}|[0-9a-f]{3}', code):
             codes.append('#' + code)
     return codes
+
+
+@app.route('/favicon.ico')
+def favicon():
+    # Browsers and crawlers ask for /favicon.ico before reading any HTML.
+    return send_from_directory(app.static_folder, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
 @app.route('/')

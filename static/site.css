@@ -112,6 +112,9 @@ a:hover { color: var(--link-hover); }
 
 .site-footer strong { color: var(--ink-soft); font-weight: 600; }
 
+.footer-brand { display: inline-flex; align-items: center; gap: 8px; }
+.footer-brand img { flex-shrink: 0; }
+
 /* Buttons */
 .btn {
     display: inline-flex;
