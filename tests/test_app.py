@@ -179,3 +179,16 @@ def test_unknown_number_checks_both_kinds(client, braceletbook):
     assert any('/patterns/normal/777/' in url for url, _ in braceletbook)
     assert any('/patterns/alpha/777/' in url for url, _ in braceletbook)
     assert b'normal or alpha pattern' in client.get(response.headers['Location']).data
+
+
+def test_favicon_ico_served_at_root(client):
+    response = client.get('/favicon.ico')
+    assert response.status_code == 200
+    assert response.mimetype == 'image/vnd.microsoft.icon'
+
+
+def test_pages_link_icons_and_preview_image(client):
+    body = client.get('/').data.decode()
+    for asset in ('favicon.svg', 'favicon.png', 'apple-touch-icon.png', 'site.webmanifest', 'og-image.png'):
+        assert f'/static/{asset}' in body
+        assert client.get(f'/static/{asset}').status_code == 200

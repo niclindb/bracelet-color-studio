@@ -1,3 +1,5 @@
+<img src="static/favicon.svg" alt="" width="72" height="72">
+
 # Bracelet Color Studio
 
 A small Flask web app for recoloring friendship bracelet patterns from [braceletbook.com](https://www.braceletbook.com/). Load a pattern by its design number, change any of its colors, and try generated palettes to see how the bracelet looks before you pick your floss.
@@ -76,7 +78,10 @@ tests/                 Route tests (braceletbook.com is mocked)
 templates/index.html   Home page
 templates/design.html  Pattern editor
 templates/colors.html  Palette Generator
-static/favicon.png     Favicon
+static/favicon.*       Site icon (SVG, PNG fallback, .ico also served at /favicon.ico)
+static/icon-*.png      Home-screen icons (Apple touch, 192px, 512px)
+static/site.webmanifest  Web app manifest
+static/og-image.png    Link preview image
 ```
 
 ## Notes
