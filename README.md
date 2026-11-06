@@ -45,6 +45,7 @@ Then open http://127.0.0.1:5000. Running `python app.py` also works.
 2. In the **Pattern Editor**, change colors with the pickers or hex fields, and drag cards to rearrange colors.
 3. Click **Smart Palette** to generate palettes. Choose a base color, optionally turn on **Use DMC colors only**, and click **Apply →** on a palette you like.
 4. You land back in the editor with that palette applied. The URL keeps the colors (`/design/<number>?hex_codes=...`), so you can bookmark or share it.
+5. Click **Change Design** in the editor to go back and load a different pattern.
 
 ## Routes
 
