@@ -266,6 +266,37 @@
             height: auto !important;
         }
 
+        .editor-tools {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tool-btn {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .tool-btn:hover:not(:disabled),
+        .tool-btn:focus-visible {
+            color: #fff;
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .tool-btn:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
         .swap-row {
             display: flex;
             gap: 6px;
@@ -331,11 +362,16 @@
             </div>
         </header>
 
+        <div class="editor-tools">
+            <button class="tool-btn" id="undoBtn" type="button" disabled title="Undo (Ctrl+Z)">&#8630; Undo</button>
+            <button class="tool-btn" id="resetBtn" type="button" title="Go back to the pattern's original colors">Reset colors</button>
+        </div>
+
         <div id="controls"></div>
 
         <div class="preview-area" id="svgPreview">
             {% if pattern %}
-            <div class="preview-bar-wrapper">{{ preview|safe }}</div>
+            {% if preview %}<div class="preview-bar-wrapper">{{ preview|safe }}</div>{% endif %}
             <div class="main-design-wrapper">{{ pattern|safe }}</div>
             {% else %}
             <p style="color: var(--text-dim);">No design loaded.</p>
@@ -352,7 +388,13 @@
         const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
         // Color letters this design actually draws with, in order (filled in by processSVG)
         let designSuffixes = [];
+        // The pattern's own colors, by color letter, for Reset
+        const originalColors = {};
+        // Undo history: earlier hex_codes strings, newest last
+        const undoStack = [];
+        let lastCommitted = '';
         const DESIGN_NUMBER = {{ design_number | tojson }};
+        const BASE_PATH = {{ base_path | tojson }};
         const INCOMING_HEX_CODES = {{ hex_codes | tojson }};
         const DMC = {{ dmc_colors | tojson }};
         const DMC_HEXES = Object.keys(DMC);
@@ -398,12 +440,52 @@
         }
 
         function editorUrl() {
-            return `/design/${DESIGN_NUMBER}?hex_codes=${currentHexCodes()}`;
+            return `${BASE_PATH}?hex_codes=${currentHexCodes()}`;
         }
 
         // Keep the URL in step with the colors so refresh, Back and shared links keep edits
         function syncUrl() {
+            const codes = currentHexCodes();
+            if (lastCommitted && codes !== lastCommitted) {
+                undoStack.push(lastCommitted);
+                if (undoStack.length > 100) undoStack.shift();
+            }
+            lastCommitted = codes;
+            document.getElementById('undoBtn').disabled = undoStack.length === 0;
             history.replaceState(null, '', editorUrl());
+            saveRecent();
+        }
+
+        // Remember this design (and its colors) for the home page's Recent list
+        function saveRecent() {
+            try {
+                const list = JSON.parse(localStorage.getItem('recentDesigns') || '[]')
+                    .filter(item => item && item.path !== BASE_PATH);
+                list.unshift({ path: BASE_PATH, hexCodes: currentHexCodes(), at: Date.now() });
+                localStorage.setItem('recentDesigns', JSON.stringify(list.slice(0, 6)));
+            } catch (e) { /* storage unavailable: skip */ }
+        }
+
+        // Set every card's color from a hex_codes string, in card order
+        function applyCodes(codes) {
+            const list = codes.split(',');
+            getCards().forEach((card, i) => {
+                if (list[i]) setCardColor(card, '#' + list[i]);
+            });
+        }
+
+        function undo() {
+            if (!undoStack.length) return;
+            lastCommitted = undoStack.pop();
+            applyCodes(lastCommitted);
+            document.getElementById('undoBtn').disabled = undoStack.length === 0;
+            history.replaceState(null, '', editorUrl());
+            saveRecent();
+        }
+
+        function resetColors() {
+            getCards().forEach((card, i) => setCardColor(card, originalColors[designSuffixes[i]]));
+            syncUrl();
         }
 
         function updateCardLabel(card) {
@@ -585,9 +667,9 @@
                 if (!color.startsWith('#')) color = '#' + color;
                 if (/^#([0-9A-F]{6}|[0-9A-F]{3})$/i.test(color)) {
                     setCardColor(card, chroma(color).hex(), { fromText: true });
-                    syncUrl();
                 }
             });
+            textField.addEventListener('change', syncUrl);
             textField.addEventListener('blur', () => {
                 textField.value = picker.value.toUpperCase();
             });
@@ -616,28 +698,27 @@
 
             // A color counts only if the design has a style for it AND draws something with it.
             // braceletbook files can define styles for colors the pattern never uses.
+            // Alpha patterns also mark empty cells with a color set to "none": not a thread color.
+            const styleColor = (suffix) => {
+                const main = combinedStyleText.match(new RegExp(`\\.s1-${suffix}\\{stroke:([^};]+)`, 'i'));
+                const knot = combinedStyleText.match(new RegExp(`\\.k-${suffix}\\{fill:([^};]+)`, 'i'));
+                const match = main || knot;
+                return match ? match[1].trim() : null;
+            };
             designSuffixes = COLOR_SUFFIXES.filter(suffix => {
-                const hasStyle = combinedStyleText.includes(`.s1-${suffix}`) || combinedStyleText.includes(`.k-${suffix}`);
+                const color = styleColor(suffix);
                 const isDrawn = previewArea.querySelector(`.s1-${suffix}, .s-${suffix}, .k-${suffix}, .kk-${suffix}`);
-                return hasStyle && isDrawn;
+                return color && !/^(none|transparent)$/i.test(color) && isDrawn;
             });
 
             designSuffixes.forEach((suffix, index) => {
-                const hasMain = combinedStyleText.includes(`.s1-${suffix}`);
-
-                let svgOriginal = '#000000';
-                if (hasMain) {
-                    const match = combinedStyleText.match(new RegExp(`\\.s1-${suffix}\\{stroke:([^}]+)\\}`, 'i'));
-                    if (match) svgOriginal = match[1].trim();
-                } else {
-                    const match = combinedStyleText.match(new RegExp(`\\.k-${suffix}\\{fill:([^}]+)\\}`, 'i'));
-                    if (match) svgOriginal = match[1].trim();
-                }
-
-                const activeColor = convertToHex(INCOMING_HEX_CODES[index] || svgOriginal);
+                originalColors[suffix] = convertToHex(styleColor(suffix));
+                const activeColor = convertToHex(INCOMING_HEX_CODES[index] || originalColors[suffix]);
                 controls.appendChild(createCard(suffix, activeColor));
             });
             updateSwapButtons();
+            lastCommitted = currentHexCodes();
+            saveRecent();
         }
 
         function updateSVGColors(suffix, newColor) {
@@ -663,7 +744,17 @@
         // ── Header buttons ───────────────────────────────────────
         document.getElementById('smartPaletteBtn').addEventListener('click', () => {
             const count = getCards().length;
-            window.location.href = `/design/${DESIGN_NUMBER}/palette?n=${count}&hex_codes=${currentHexCodes()}`;
+            window.location.href = `${BASE_PATH}/palette?n=${count}&hex_codes=${currentHexCodes()}`;
+        });
+
+        document.getElementById('undoBtn').addEventListener('click', undo);
+        document.getElementById('resetBtn').addEventListener('click', resetColors);
+        document.addEventListener('keydown', (e) => {
+            const typing = e.target.matches && e.target.matches('input[type="text"]');
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !typing) {
+                e.preventDefault();
+                undo();
+            }
         });
 
         document.getElementById('copyLinkBtn').addEventListener('click', (e) => {

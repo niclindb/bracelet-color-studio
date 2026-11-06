@@ -8,14 +8,15 @@ from dmc_dict import dmc_dict as dmc_colors
 
 app = Flask(__name__)
 
-BRACELETBOOK_URL = "https://www.braceletbook.com/patterns/normal/{}/"
+BRACELETBOOK_URL = "https://www.braceletbook.com/patterns/{}/{}/"
+KINDS = ("normal", "alpha")
 REQUEST_TIMEOUT = 10  # seconds per request to braceletbook.com
 CACHE_TTL = 6 * 60 * 60  # keep fetched patterns for 6 hours
 CDN_CACHE_HEADER = "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400"
 
 ERRORS = {
     "invalid": "Please enter a design number, like 1024.",
-    "not_found": "We couldn't find a normal pattern with that number on braceletbook.com. Check the number and try again.",
+    "not_found": "We couldn't find that number in braceletbook's {kind} patterns. Check the number and pattern type, then try again.",
     "unavailable": "braceletbook.com didn't respond. Please try again in a minute.",
 }
 
@@ -47,33 +48,48 @@ def _fetch(url):
     return response.text
 
 
-def fetch_svgs(design_number):
-    """Return (pattern_svg, preview_svg) for a design, using a short-lived cache."""
-    cached = _svg_cache.get(design_number)
+def fetch_svgs(design_number, kind='normal'):
+    """Return (pattern_svg, preview_svg) for a design, using a short-lived cache.
+
+    preview_svg is None when braceletbook has no preview for the pattern.
+    """
+    key = (kind, design_number)
+    cached = _svg_cache.get(key)
     if cached and time.time() - cached[0] < CACHE_TTL:
         return cached[1]
 
-    html_content = _fetch(BRACELETBOOK_URL.format(design_number))
+    html_content = _fetch(BRACELETBOOK_URL.format(kind, design_number))
     match = re.search(r'https://[^"\'\s]*?pattern\.svg', html_content)
     if not match:
         raise PatternNotFound(design_number)
     pattern_url = match.group(0)
     preview_url = pattern_url.replace('pattern.svg', 'preview.svg')
 
-    svgs = (remove_wm_tags(_fetch(pattern_url)), remove_wm_tags(_fetch(preview_url)))
-    _svg_cache[design_number] = (time.time(), svgs)
+    pattern_svg = remove_wm_tags(_fetch(pattern_url))
+    try:
+        preview_svg = remove_wm_tags(_fetch(preview_url))
+    except PatternNotFound:
+        preview_svg = None
+
+    svgs = (pattern_svg, preview_svg)
+    _svg_cache[key] = (time.time(), svgs)
     return svgs
 
 
-def load_or_redirect(design_number):
+def editor_path(kind, design_number):
+    return f"/{'alpha' if kind == 'alpha' else 'design'}/{design_number}"
+
+
+def load_or_redirect(design_number, kind):
     """Fetch a design's SVGs, or return a redirect to the home page with an error."""
     try:
-        return fetch_svgs(design_number), None
+        return fetch_svgs(design_number, kind), None
     except PatternNotFound:
         error = "not_found"
     except PatternUnavailable:
         error = "unavailable"
-    return None, redirect(url_for('index', error=error, design=design_number))
+    return None, redirect(url_for('index', error=error, design=design_number,
+                                  kind=kind if kind == 'alpha' else None))
 
 
 def parse_hex_codes(raw):
@@ -88,22 +104,25 @@ def parse_hex_codes(raw):
 
 @app.route('/')
 def index():
-    error = ERRORS.get(request.args.get('error', ''))
+    kind = request.args.get('kind') if request.args.get('kind') in KINDS else 'normal'
+    error = ERRORS.get(request.args.get('error', ''), '').format(kind=kind) or None
     status = 404 if request.args.get('error') == 'not_found' else 200
-    return template('index.html', error=error, design=request.args.get('design', '')), status
+    return template('index.html', error=error, design=request.args.get('design', ''), kind=kind), status
 
 
 @app.route('/submit-design', methods=['POST'])
 def submit_design():
     design_number = (request.form.get('design_number') or '').strip()
+    kind = request.form.get('design_type') if request.form.get('design_type') in KINDS else 'normal'
     if not design_number.isdigit():
-        return redirect(url_for('index', error='invalid'))
-    return redirect(url_for('design', design_number=int(design_number)))
+        return redirect(url_for('index', error='invalid', kind=kind if kind == 'alpha' else None))
+    return redirect(editor_path(kind, int(design_number)))
 
 
-@app.route('/design/<int:design_number>')
-def design(design_number):
-    svgs, error_redirect = load_or_redirect(design_number)
+@app.route('/design/<int:design_number>', defaults={'kind': 'normal'})
+@app.route('/alpha/<int:design_number>', defaults={'kind': 'alpha'})
+def design(design_number, kind):
+    svgs, error_redirect = load_or_redirect(design_number, kind)
     if error_redirect:
         return error_redirect
     pattern_svg, preview_svg = svgs
@@ -111,6 +130,8 @@ def design(design_number):
     response = app.make_response(template(
         'design.html',
         design_number=design_number,
+        kind=kind,
+        base_path=editor_path(kind, design_number),
         pattern=pattern_svg,
         preview=preview_svg,
         hex_codes=parse_hex_codes(request.args.get('hex_codes')),
@@ -120,24 +141,30 @@ def design(design_number):
     return response
 
 
-@app.route('/design/<int:design_number>/palette')
-def palette(design_number):
-    svgs, error_redirect = load_or_redirect(design_number)
+@app.route('/design/<int:design_number>/palette', defaults={'kind': 'normal'})
+@app.route('/alpha/<int:design_number>/palette', defaults={'kind': 'alpha'})
+def palette(design_number, kind):
+    svgs, error_redirect = load_or_redirect(design_number, kind)
     if error_redirect:
         return error_redirect
-    _, preview_svg = svgs
+    pattern_svg, preview_svg = svgs
 
     num_colors = request.args.get('n', type=int) or 5
     num_colors = max(1, min(num_colors, 16))
     hex_codes = parse_hex_codes(request.args.get('hex_codes'))
-    back_url = url_for('design', design_number=design_number,
-                       hex_codes=','.join(c.lstrip('#') for c in hex_codes) or None)
+    base_path = editor_path(kind, design_number)
+    back_url = base_path
+    if hex_codes:
+        back_url += '?hex_codes=' + ','.join(c.lstrip('#') for c in hex_codes)
 
     return template(
         'colors.html',
         num_colors=num_colors,
         design_number=design_number,
-        preview_svg=preview_svg,
+        base_path=base_path,
+        # Alpha patterns may have no separate preview; recolor the pattern itself instead
+        preview_svg=preview_svg or pattern_svg,
+        current_colors=hex_codes,
         back_url=back_url,
         colors=list(dmc_colors),
     )
@@ -150,7 +177,7 @@ def colors(num_colors):
     match = re.search(r'/design/(\d+)', referrer)
     if not match:
         return redirect(url_for('index'))
-    return redirect(url_for('palette', design_number=int(match.group(1)), n=num_colors))
+    return redirect(f"/design/{int(match.group(1))}/palette?n={num_colors}")
 
 
 if __name__ == '__main__':

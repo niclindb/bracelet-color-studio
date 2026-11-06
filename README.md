@@ -48,9 +48,9 @@ python -m pytest
 
 ## Usage
 
-1. Open the [live app](https://bracelet-color-studio.vercel.app/) (or your local server). On the home page, enter a design number (for example `1024`) and click **Initialize Design**.
-2. In the **Pattern Editor**, change colors with the pickers or hex fields. Drag cards, or use the ◀ ▶ buttons, to rearrange colors. Each card shows the matching DMC floss number, or the closest one (≈). The URL updates as you edit, and **Copy Link** copies it.
-3. Click **Smart Palette** to generate palettes. It starts from a random base color; pick your own or hit **Shuffle**. Each palette is shown on your bracelet. Optionally turn on **Use DMC colors only**, and click **Apply →** on a palette you like.
+1. Open the [live app](https://bracelet-color-studio.vercel.app/) (or your local server). On the home page, choose **Normal** or **Alpha**, enter a design number (for example `1024`) and click **Initialize Design**. Designs you've opened appear under **Recent designs**.
+2. In the **Pattern Editor**, change colors with the pickers or hex fields. Drag cards, or use the ◀ ▶ buttons, to rearrange colors. Each card shows the matching DMC floss number, or the closest one (≈). The URL updates as you edit, and **Copy Link** copies it. **Undo** (or Ctrl+Z) steps back through changes, and **Reset colors** restores the pattern's own colors.
+3. Click **Smart Palette** to generate palettes. It starts from a random base color; pick your own or hit **Shuffle**. Each palette is shown on your bracelet. Tap your current colors to lock the ones you want to keep; palettes then fill only the unlocked colors. Optionally turn on **Use DMC colors only**, and click **Apply →** on a palette you like.
 4. You land back in the editor with that palette applied. The URL keeps the colors (`/design/<number>?hex_codes=...`), so you can bookmark or share it.
 5. Click **Change Design** in the editor to go back and load a different pattern.
 
@@ -61,7 +61,8 @@ python -m pytest
 | `/` | GET | Home page with the design number form |
 | `/submit-design` | POST | Redirects to `/design/<design_number>` |
 | `/design/<design_number>` | GET | Pattern editor. Optional `hex_codes` query (comma-separated hex without `#`) presets the colors in order |
-| `/design/<design_number>/palette` | GET | Smart Palette page. `n` sets the number of colors; `hex_codes` carries the editor's current colors for the Back link |
+| `/alpha/<design_number>` | GET | Pattern editor for an alpha pattern (same `hex_codes` query) |
+| `/design/<design_number>/palette`, `/alpha/<design_number>/palette` | GET | Smart Palette page. `n` sets the number of colors; `hex_codes` carries the editor's current colors for the Back link |
 | `/generate-colors/<num_colors>` | GET, POST | Old Smart Palette URL; redirects to the new one |
 
 ## Project structure
@@ -81,5 +82,5 @@ static/favicon.png     Favicon
 ## Notes
 
 - Patterns and artwork belong to braceletbook.com and their authors. This app only fetches them for personal recoloring.
-- If a design number can't be loaded, the home page shows an error. Only "normal" patterns are supported.
+- If a design number can't be loaded, the home page shows an error. Normal and alpha patterns are supported.
 - The palette generator was inspired by [Muzli Colors](https://colors.muz.li/).
