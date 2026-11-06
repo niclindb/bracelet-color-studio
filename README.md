@@ -2,7 +2,7 @@
 
 A small Flask web app for recoloring friendship bracelet patterns from [braceletbook.com](https://www.braceletbook.com/). Load a pattern by its design number, change any of its colors, and try generated palettes to see how the bracelet looks before you pick your floss.
 
-**Live app:** https://bracelet-color-studio-lindberg-dev-projects.vercel.app/
+**Live app:** https://bracelet-color-studio.vercel.app/
 
 ## Features
 
@@ -48,7 +48,7 @@ python -m pytest
 
 ## Usage
 
-1. Open the [live app](https://bracelet-color-studio-lindberg-dev-projects.vercel.app/) (or your local server). On the home page, enter a design number (for example `1024`) and click **Initialize Design**.
+1. Open the [live app](https://bracelet-color-studio.vercel.app/) (or your local server). On the home page, enter a design number (for example `1024`) and click **Initialize Design**.
 2. In the **Pattern Editor**, change colors with the pickers or hex fields. Drag cards, or use the ◀ ▶ buttons, to rearrange colors. Each card shows the matching DMC floss number, or the closest one (≈). The URL updates as you edit, and **Copy Link** copies it.
 3. Click **Smart Palette** to generate palettes. It starts from a random base color; pick your own or hit **Shuffle**. Each palette is shown on your bracelet. Optionally turn on **Use DMC colors only**, and click **Apply →** on a palette you like.
 4. You land back in the editor with that palette applied. The URL keeps the colors (`/design/<number>?hex_codes=...`), so you can bookmark or share it.
