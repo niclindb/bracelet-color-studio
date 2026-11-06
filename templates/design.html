@@ -199,6 +199,32 @@
             text-transform: uppercase;
         }
 
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(96, 165, 250, 0.1);
+        }
+
         /* ── Preview Area ── */
         .preview-area {
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
@@ -266,7 +292,10 @@
     <div class="container">
         <header>
             <h2>Pattern Editor</h2>
-            <button class="btn-primary" onclick="colorGenerator()">Smart Palette</button>
+            <div class="header-actions">
+                <a class="btn-secondary" href="{{ url_for('index') }}">Change Design</a>
+                <button class="btn-primary" onclick="colorGenerator()">Smart Palette</button>
+            </div>
         </header>
 
         <div id="controls"></div>
