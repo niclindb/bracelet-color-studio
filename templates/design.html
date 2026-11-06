@@ -350,6 +350,8 @@
 
     <script>
         const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
+        // Color letters this design actually draws with, in order (filled in by processSVG)
+        let designSuffixes = [];
         const DESIGN_NUMBER = {{ design_number | tojson }};
         const INCOMING_HEX_CODES = {{ hex_codes | tojson }};
         const DMC = {{ dmc_colors | tojson }};
@@ -387,13 +389,12 @@
         }
 
         function currentHexCodes() {
-            // Ordered by color letter (A, B, C...) to match the hex_codes URL format
-            const codes = [];
+            // One code per design color, in color-letter order (A, B, C...)
+            const bySuffix = {};
             getCards().forEach(card => {
-                const i = COLOR_SUFFIXES.indexOf(card.dataset.suffix);
-                codes[i] = card.querySelector('input[type="color"]').value.replace('#', '');
+                bySuffix[card.dataset.suffix] = card.querySelector('input[type="color"]').value.replace('#', '');
             });
-            return codes.filter(Boolean).join(',');
+            return designSuffixes.map(s => bySuffix[s]).join(',');
         }
 
         function editorUrl() {
@@ -535,7 +536,7 @@
         // After a swap, each card takes the color letter of its new position
         function rebindAllSuffixes() {
             getCards().forEach((card, i) => {
-                card.dataset.suffix = COLOR_SUFFIXES[i];
+                card.dataset.suffix = designSuffixes[i];
                 updateCardLabel(card);
                 updateSVGColors(card.dataset.suffix, card.querySelector('input[type="color"]').value);
             });
@@ -610,14 +611,19 @@
 
             let combinedStyleText = '';
             svgs.forEach(s => {
-                const style = s.querySelector('style');
-                if (style) combinedStyleText += style.textContent;
+                s.querySelectorAll('style').forEach(style => combinedStyleText += style.textContent);
             });
 
-            COLOR_SUFFIXES.forEach((suffix, index) => {
+            // A color counts only if the design has a style for it AND draws something with it.
+            // braceletbook files can define styles for colors the pattern never uses.
+            designSuffixes = COLOR_SUFFIXES.filter(suffix => {
+                const hasStyle = combinedStyleText.includes(`.s1-${suffix}`) || combinedStyleText.includes(`.k-${suffix}`);
+                const isDrawn = previewArea.querySelector(`.s1-${suffix}, .s-${suffix}, .k-${suffix}, .kk-${suffix}`);
+                return hasStyle && isDrawn;
+            });
+
+            designSuffixes.forEach((suffix, index) => {
                 const hasMain = combinedStyleText.includes(`.s1-${suffix}`);
-                const hasPreview = combinedStyleText.includes(`.k-${suffix}`);
-                if (!hasMain && !hasPreview) return;
 
                 let svgOriginal = '#000000';
                 if (hasMain) {
