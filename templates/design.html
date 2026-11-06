@@ -4,74 +4,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bracelet Color Studio</title>
+    <title>Design {{ design_number }} · Bracelet Color Studio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+{% include '_head.html' %}
     <style>
-        :root {
-            --bg: #0b0f1a;
-            --panel: #161b2a;
-            --panel-light: #1f263d;
-            --accent: #60a5fa;
-            --border: #2d334a;
-            --text-dim: #94a3b8;
-        }
-
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: #fff;
-            margin: 0;
-            padding: 15px;
+        .page {
+            max-width: 1000px;
+            padding-top: 8px;
+            padding-bottom: 56px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            gap: 20px;
         }
 
-        .container {
-            width: 100%;
-            max-width: 900px;
-        }
-
-        header {
+        .toolbar {
             display: flex;
-            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: flex-end;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            width: 100%;
+            gap: 16px;
         }
 
-        h2 {
-            font-size: 1.1rem;
+        .page-title h1 {
             margin: 0;
+            font-size: clamp(28px, 4vw, 40px);
+            line-height: 1.05;
+            font-weight: 700;
+        }
+
+        .page-title p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .header-actions {
             display: flex;
-            align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* ── Color cards ── */
+        .colors-panel {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .colors-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .colors-head h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .colors-hint {
+            font-size: 13px;
+            color: var(--subtle);
+        }
+
+        .editor-tools {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            min-height: 40px;
+            padding: 0 14px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .tool-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+            transform: none;
         }
 
         #controls {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: var(--panel);
-            border-radius: 16px;
-            border: 1px solid var(--border);
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
             position: relative;
         }
 
-        /* ── Drag & Drop Logic ── */
+        /* ── Drag & Drop ── */
         .color-group {
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: var(--panel-light);
-            padding: 16px 10px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
+            background: var(--bg);
+            padding: 14px 10px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
             position: relative;
             transition: box-shadow 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s;
             cursor: grab;
@@ -88,15 +121,15 @@
 
         /* Source card dims while dragging */
         .color-group.is-placeholder {
-            opacity: 0.2;
+            opacity: 0.25;
             border-style: dashed;
-            border-color: var(--accent);
+            border-color: var(--ink);
         }
 
         /* Target card glows */
         .color-group.drag-over {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px var(--accent);
+            border-color: var(--ink);
+            box-shadow: 0 0 0 2px var(--ink);
             transform: scale(1.04);
         }
 
@@ -110,34 +143,35 @@
             align-items: center;
             gap: 6px;
             padding: 10px 14px;
-            border-radius: 12px;
-            border: 2px solid var(--accent);
-            background: var(--panel-light);
-            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
-            opacity: 0.93;
+            border-radius: 14px;
+            border: 2px solid var(--ink);
+            background: var(--card);
+            box-shadow: 0 16px 48px rgba(17, 24, 39, 0.3);
+            opacity: 0.95;
         }
 
         #drag-ghost .ghost-swatch {
             width: 38px;
             height: 38px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
         #drag-ghost .ghost-label {
-            font-size: 10px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: var(--text-dim);
+            color: var(--subtle);
         }
 
         /* ── Form Elements ── */
-        label {
-            font-size: 10px;
+        .color-group label {
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: var(--text-dim);
-            margin-bottom: 12px;
+            color: var(--subtle);
+            font-weight: 600;
+            margin-bottom: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -145,6 +179,10 @@
             text-align: center;
             pointer-events: none;
             /* Let clicks pass to the card for dragging */
+        }
+
+        .color-name {
+            color: var(--ink);
         }
 
         .input-row {
@@ -156,11 +194,12 @@
 
         input[type="color"] {
             flex-shrink: 0;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border: none;
             cursor: pointer;
             background: none;
+            padding: 0;
         }
 
         input[type="color"]::-webkit-color-swatch-wrapper {
@@ -168,91 +207,71 @@
         }
 
         input[type="color"]::-webkit-color-swatch {
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 9px;
         }
 
-        input[type="text"] {
+        input[type="color"]::-moz-color-swatch {
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 9px;
+        }
+
+        .input-row input[type="text"] {
             width: 100%;
-            background: #0b0f1a;
-            border: 1px solid var(--border);
-            color: #fff;
-            padding: 5px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 11px;
+            min-width: 0;
+            background: var(--card);
+            border: 1px solid var(--field-line);
+            color: var(--ink);
+            padding: 8px 6px;
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            /* 16px stops iOS zooming in on focus */
+            font-size: 16px;
             text-align: center;
             outline: none;
             cursor: text;
             user-select: text;
-            /* Allow text interaction inside the box */
         }
 
-        .btn-primary {
-            background: var(--accent);
-            color: #0b0f1a;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            text-transform: uppercase;
+        .input-row input[type="text"]:focus {
+            border-color: var(--ink);
         }
 
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--accent);
-            border: 1px solid var(--accent);
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            font-family: inherit;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(96, 165, 250, 0.1);
+        .floss-code {
+            font-size: 11px;
+            color: var(--subtle);
+            text-transform: none;
+            letter-spacing: 0;
         }
 
         /* ── Preview Area ── */
         .preview-area {
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            border-radius: 24px;
-            border: 1px solid var(--border);
-            padding: 20px;
+            padding: clamp(16px, 3vw, 28px);
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 500px;
+            min-height: 420px;
             overflow: hidden;
-            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7);
         }
 
         .preview-bar-wrapper {
             width: 100%;
             height: 90px;
-            margin-bottom: 30px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 28px;
+            background: var(--bg);
+            border-radius: 14px;
+            border: 1px solid var(--line);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
+            cursor: zoom-in;
+        }
+
+        .preview-bar-wrapper:focus-visible {
+            outline: 3px solid var(--link);
+            outline-offset: 2px;
         }
 
         .preview-bar-wrapper svg {
@@ -266,47 +285,12 @@
             height: auto !important;
         }
 
-        .editor-tools {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .tool-btn {
-            background: transparent;
-            color: var(--text-dim);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-        }
-
-        .tool-btn:hover:not(:disabled),
-        .tool-btn:focus-visible {
-            color: #fff;
-            border-color: var(--accent);
-            outline: none;
-        }
-
-        .tool-btn:disabled {
-            opacity: 0.35;
-            cursor: default;
-        }
-
-        .preview-bar-wrapper {
-            cursor: zoom-in;
-        }
-
         .zoom-hint {
             position: absolute;
-            right: 8px;
+            right: 10px;
             bottom: 6px;
             font-size: 14px;
-            color: var(--text-dim);
+            color: var(--subtle);
             pointer-events: none;
         }
 
@@ -314,7 +298,7 @@
             position: fixed;
             inset: 0;
             z-index: 10000;
-            background: rgba(5, 8, 15, 0.92);
+            background: rgba(17, 24, 39, 0.92);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -344,27 +328,24 @@
             position: absolute;
             top: 12px;
             right: 12px;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            border: 1px solid var(--border);
-            background: var(--panel);
-            color: #fff;
+            border: none;
+            background: var(--card);
+            color: var(--ink);
             font-size: 24px;
             line-height: 1;
             cursor: pointer;
         }
 
-        .floss-code {
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            opacity: 0.8;
-        }
-
         @media (max-width: 600px) {
-            header {
-                flex-direction: column;
-                gap: 15px;
+            .header-actions {
+                width: 100%;
+            }
+
+            .header-actions .btn {
+                flex: 1 1 auto;
             }
 
             #controls {
@@ -379,34 +360,47 @@
 </head>
 
 <body>
+{% include '_header.html' %}
 
-    <div class="container">
-        <header>
-            <h2>Pattern Editor</h2>
-            <div class="header-actions">
-                <a class="btn-secondary" href="{{ url_for('index') }}">Change Design</a>
-                <button class="btn-secondary" id="copyLinkBtn" type="button">Copy Link</button>
-                <button class="btn-primary" id="smartPaletteBtn" type="button">Color Generator</button>
+    <main class="wrap page">
+        <div class="toolbar">
+            <div class="page-title">
+                <h1 class="display">Design {{ design_number }}</h1>
+                <p>{{ 'Alpha' if kind == 'alpha' else 'Normal' }} pattern from <a href="https://www.braceletbook.com/patterns/{{ 'alpha' if kind == 'alpha' else 'normal' }}/{{ design_number }}/" target="_blank" rel="noopener">braceletbook.com</a></p>
             </div>
-        </header>
-
-        <div class="editor-tools">
-            <button class="tool-btn" id="undoBtn" type="button" disabled title="Undo (Ctrl+Z)">&#8630; Undo</button>
-            <button class="tool-btn" id="resetBtn" type="button" title="Go back to the pattern's original colors">Reset colors</button>
+            <div class="header-actions">
+                <a class="btn btn-secondary" href="{{ url_for('index') }}">Change design</a>
+                <button class="btn btn-secondary" id="copyLinkBtn" type="button">Copy Link</button>
+                <button class="btn btn-primary" id="smartPaletteBtn" type="button">Palette Generator</button>
+            </div>
         </div>
 
-        <div id="controls"></div>
+        <section class="panel colors-panel" aria-labelledby="colorsTitle">
+            <div class="colors-head">
+                <div>
+                    <h2 id="colorsTitle">Thread colors</h2>
+                    <span class="colors-hint">Pick a color or type a hex code. Drag cards to swap.</span>
+                </div>
+                <div class="editor-tools">
+                    <button class="btn btn-secondary tool-btn" id="undoBtn" type="button" disabled title="Undo (Ctrl+Z)">&#8630; Undo</button>
+                    <button class="btn btn-secondary tool-btn" id="resetBtn" type="button" title="Go back to the pattern's original colors">Reset colors</button>
+                </div>
+            </div>
+            <div id="controls"></div>
+        </section>
 
-        <div class="preview-area" id="svgPreview">
+        <div class="panel preview-area" id="svgPreview">
             {% if pattern %}
             {% if preview %}<div class="preview-bar-wrapper" id="previewBar" role="button" tabindex="0"
                 title="Tap to enlarge" aria-label="Enlarge bracelet preview">{{ preview|safe }}<span class="zoom-hint" aria-hidden="true">&#x2922;</span></div>{% endif %}
             <div class="main-design-wrapper">{{ pattern|safe }}</div>
             {% else %}
-            <p style="color: var(--text-dim);">No design loaded.</p>
+            <p style="color: var(--subtle);">No design loaded.</p>
             {% endif %}
         </div>
-    </div>
+    </main>
+
+{% include '_footer.html' %}
 
     <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Bracelet preview">
         <img id="lightboxImg" alt="Bracelet preview, enlarged">

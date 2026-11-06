@@ -9,7 +9,7 @@ A small Flask web app for recoloring friendship bracelet patterns from [bracelet
 - **Load any normal pattern by number.** Enter a braceletbook.com design number and the app fetches its pattern and preview SVGs, with the watermark text removed.
 - **Pattern editor.** Each color in the pattern gets a card with a color picker and a hex field. Changes update the knot diagram and the bracelet preview live.
 - **Drag to swap colors.** Drag one color card onto another to swap their positions in the pattern. Dragging works with mouse and touch.
-- **Color Generator.** Opens a palette generator sized to the number of colors in the current pattern. Pick or type a base color, or hit **Shuffle** for a random one, and the app builds palettes from it in five groups:
+- **Palette Generator.** Opens a palette generator sized to the number of colors in the current pattern. Pick or type a base color, or hit **Shuffle** for a random one, and the app builds palettes from it in five groups:
   - **Harmony:** Analogous, Complementary, Split-Complementary, Triadic, Tetradic / Square, Double Split-Complementary
   - **Tone & Lightness:** Monochromatic, Tinted (toward white), Shadowed (toward black)
   - **Temperature:** Warm, Cool, Warm–Cool Split
@@ -50,7 +50,7 @@ python -m pytest
 
 1. Open the [live app](https://bracelet-color-studio.vercel.app/) (or your local server). On the home page, enter a design number (for example `1024`) and click **Initialize Design**. Designs you've opened appear under **Recent designs**.
 2. In the **Pattern Editor**, change colors with the pickers or hex fields. Drag cards to rearrange colors. Tap the bracelet preview to see it larger. Each card shows the matching DMC floss number, or the closest one (≈). The URL updates as you edit, and **Copy Link** copies it. **Undo** (or Ctrl+Z) steps back through changes, and **Reset colors** restores the pattern's own colors.
-3. Click **Color Generator** to generate palettes. It starts from a random base color; pick your own or hit **Shuffle**. Each palette is shown on your bracelet. Tap your current colors to lock the ones you want to keep; palettes then fill only the unlocked colors. Optionally turn on **Use DMC colors only**, and click **Apply →** on a palette you like.
+3. Click **Palette Generator** to generate palettes. It starts from a random base color; pick your own or hit **Shuffle**. Each palette is shown on your bracelet. Tap your current colors to lock the ones you want to keep; palettes then fill only the unlocked colors. Optionally turn on **Use DMC colors only**, and click **Apply →** on a palette you like.
 4. You land back in the editor with that palette applied. The URL keeps the colors (`/design/<number>?hex_codes=...`), so you can bookmark or share it.
 5. Click **Change Design** in the editor to go back and load a different pattern.
 
@@ -62,8 +62,8 @@ python -m pytest
 | `/submit-design` | POST | Redirects to `/design/<design_number>` |
 | `/design/<design_number>` | GET | Pattern editor. Optional `hex_codes` query (comma-separated hex without `#`) presets the colors in order |
 | `/alpha/<design_number>` | GET | Pattern editor for an alpha pattern (same `hex_codes` query) |
-| `/design/<design_number>/palette`, `/alpha/<design_number>/palette` | GET | Color Generator page. `n` sets the number of colors; `hex_codes` carries the editor's current colors for the Back link |
-| `/generate-colors/<num_colors>` | GET, POST | Old Color Generator URL; redirects to the new one |
+| `/design/<design_number>/palette`, `/alpha/<design_number>/palette` | GET | Palette Generator page. `n` sets the number of colors; `hex_codes` carries the editor's current colors for the Back link |
+| `/generate-colors/<num_colors>` | GET, POST | Old Palette Generator URL; redirects to the new one |
 
 ## Project structure
 
@@ -75,7 +75,7 @@ requirements-dev.txt   Adds pytest for running tests
 tests/                 Route tests (braceletbook.com is mocked)
 templates/index.html   Home page
 templates/design.html  Pattern editor
-templates/colors.html  Color Generator
+templates/colors.html  Palette Generator
 static/favicon.png     Favicon
 ```
 
