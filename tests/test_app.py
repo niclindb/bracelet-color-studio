@@ -58,6 +58,16 @@ def test_submit_design_redirects_to_editor(client):
     assert response.headers['Location'] == '/design/1024'
 
 
+@pytest.mark.parametrize('pasted, location', [
+    ('https://www.braceletbook.com/patterns/normal/1024/', '/design/1024'),
+    ('braceletbook.com/patterns/alpha/3318', '/alpha/3318'),
+    ('#1024', '/design/1024'),
+])
+def test_submit_design_accepts_links_and_hash(client, pasted, location):
+    response = client.post('/submit-design', data={'design_number': pasted})
+    assert response.headers['Location'] == location
+
+
 def test_submit_design_rejects_empty_number(client):
     response = client.post('/submit-design', data={'design_number': ''})
     assert response.headers['Location'] == '/?error=invalid'
