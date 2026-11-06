@@ -253,6 +253,68 @@
             flex-shrink: 0;
         }
 
+        .lock-row {
+            flex-basis: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .lock-row[hidden] {
+            display: none;
+        }
+
+        .lock-title {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        .lock-chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .lock-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px 5px 5px;
+            border-radius: 20px;
+            background: var(--panel-light);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            letter-spacing: 0;
+        }
+
+        .lock-chip.is-locked {
+            border-color: var(--accent);
+            color: #fff;
+            background: rgba(96, 165, 250, 0.15);
+        }
+
+        .chip-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--chip);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chip-lock:empty {
+            display: none;
+        }
+
+        .swatch.is-locked::after {
+            content: '\1F512';
+            position: absolute;
+            top: 6px;
+            font-size: 0.7rem;
+        }
+
         .back-link {
             flex-basis: 100%;
             color: var(--accent);
@@ -365,6 +427,11 @@
                 </label>
             </div>
 
+            <div class="lock-row" id="lockRow" hidden>
+                <div class="lock-title">Your colors &middot; tap to lock the ones you want to keep</div>
+                <div class="lock-chips" id="lockChips"></div>
+            </div>
+
             <div class="muzli-link">
                 Inspired by <a href="https://colors.muz.li/" target="_blank">Muzli Colors</a>
             </div>
@@ -378,6 +445,10 @@
     <script>
         const allowedColorsArray = {{ colors | tojson }};
         const DESIGN_NUMBER = {{ design_number | tojson }};
+        const BASE_PATH = {{ base_path | tojson }};
+        // The editor's current colors, in card order, and which of them are locked
+        const CURRENT_COLORS = {{ current_colors | tojson }}.map(c => chroma(c).hex().toUpperCase());
+        const locked = new Set();
         const COLOR_SUFFIXES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
 
         const picker = document.getElementById('picker');
@@ -396,7 +467,12 @@
         const designSuffixes = (() => {
             const svg = document.getElementById('previewTemplate').content.querySelector('svg');
             if (!svg) return COLOR_SUFFIXES;
-            const used = COLOR_SUFFIXES.filter(s => svg.querySelector(`.s1-${s}, .s-${s}, .k-${s}, .kk-${s}`));
+            const css = [...svg.querySelectorAll('style')].map(st => st.textContent).join('');
+            const used = COLOR_SUFFIXES.filter(s => {
+                const m = css.match(new RegExp(`\\.s1-${s}\\{stroke:([^};]+)`, 'i')) || css.match(new RegExp(`\\.k-${s}\\{fill:([^};]+)`, 'i'));
+                // Same rule as the editor: drawn with, and a real color (alpha patterns use "none" for empty cells)
+                return m && !/^(none|transparent)$/i.test(m[1].trim()) && svg.querySelector(`.s1-${s}, .s-${s}, .k-${s}, .kk-${s}`);
+            });
             return used.length ? used : COLOR_SUFFIXES;
         })();
 
@@ -783,6 +859,50 @@
         // ─────────────────────────────────────────────────────────────
         //  Render
         // ─────────────────────────────────────────────────────────────
+        // Locked slots keep the editor's color; the palette's colors fill the other slots in order
+        function applyLocks(colors) {
+            if (!locked.size) return colors;
+            const free = colors.slice();
+            return colors.map((_, i) => locked.has(i) ? CURRENT_COLORS[i] : free.shift());
+        }
+
+        function renderLockChips() {
+            const chips = document.getElementById('lockChips');
+            chips.innerHTML = '';
+            CURRENT_COLORS.forEach((color, i) => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'lock-chip' + (locked.has(i) ? ' is-locked' : '');
+                chip.style.setProperty('--chip', color);
+                chip.setAttribute('aria-pressed', locked.has(i));
+                chip.title = `${locked.has(i) ? 'Unlock' : 'Lock'} Color ${String.fromCharCode(65 + i)} (${color})`;
+                chip.innerHTML = `<span class="chip-swatch"></span><span class="chip-label">${String.fromCharCode(65 + i)}</span><span class="chip-lock">${locked.has(i) ? '&#128274;' : ''}</span>`;
+                chip.onclick = () => {
+                    locked.has(i) ? locked.delete(i) : locked.add(i);
+                    saveLocksToUrl();
+                    renderLockChips();
+                    generate();
+                };
+                chips.appendChild(chip);
+            });
+        }
+
+        function saveLocksToUrl() {
+            const url = new URL(window.location.href);
+            if (locked.size) url.searchParams.set('lock', [...locked].sort((a, b) => a - b).join(','));
+            else url.searchParams.delete('lock');
+            history.replaceState(null, '', url.pathname + '?' + url.searchParams.toString().replace(/%2C/gi, ','));
+        }
+
+        if (CURRENT_COLORS.length === numColors) {
+            new URLSearchParams(window.location.search).get('lock')?.split(',').forEach(v => {
+                const i = parseInt(v, 10);
+                if (i >= 0 && i < numColors) locked.add(i);
+            });
+            document.getElementById('lockRow').hidden = false;
+            renderLockChips();
+        }
+
         function generate() {
             const hex = hexInput.value;
             if (!chroma.valid(hex)) return;
@@ -830,9 +950,10 @@
                     if (useDMC) {
                         colors = snapToDMC(colors);
                     }
+                    colors = applyLocks(colors);
 
                     const urlHexParam = colors.map(h => h.replace('#', '')).join(',');
-                    const link = `/design/${DESIGN_NUMBER}?hex_codes=${urlHexParam}`;
+                    const link = `${BASE_PATH}?hex_codes=${urlHexParam}`;
 
                     const row = document.createElement('div');
                     row.className = 'row';
@@ -847,7 +968,7 @@
                     const pDiv = row.querySelector('.palette');
                     colors.forEach((cHex, idx) => {
                         const swatch = document.createElement('div');
-                        swatch.className = 'swatch' + (idx === 0 ? ' is-base' : '');
+                        swatch.className = 'swatch' + (locked.has(idx) ? ' is-locked' : '');
                         swatch.style.backgroundColor = cHex;
                         swatch.style.color = chroma(cHex).luminance() > 0.4 ? '#000' : '#fff';
                         swatch.innerHTML = `<span>${cHex}</span>`;

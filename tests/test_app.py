@@ -5,6 +5,7 @@ import app as app_module
 
 PATTERN_SVG = '<svg xmlns="http://www.w3.org/2000/svg"><style>.s1-a{stroke:#ff0000}.s1-b{stroke:#00ff00}</style></svg>'
 PREVIEW_SVG = '<svg xmlns="http://www.w3.org/2000/svg"><style>.k-a{fill:#ff0000}.k-b{fill:#00ff00}</style><text class="wm0">watermark</text></svg>'
+ALPHA_SVG = '<svg xmlns="http://www.w3.org/2000/svg"><style>.k-a{fill:#fff}.k-b{fill:none}</style></svg>'
 PAGE_HTML = '<img src="https://img.braceletbook.com/patterns/1024/pattern.svg">'
 
 
@@ -29,6 +30,12 @@ def braceletbook(monkeypatch):
 
     def fake_get(url, timeout=None):
         calls.append((url, timeout))
+        if url.endswith('/patterns/alpha/555/'):
+            return FakeResponse('<img src="https://img.braceletbook.com/alpha/555/pattern.svg">')
+        if url.endswith('/alpha/555/pattern.svg'):
+            return FakeResponse(ALPHA_SVG)
+        if url.endswith('/alpha/555/preview.svg'):
+            return FakeResponse(status_code=404)
         if url.endswith('/patterns/normal/1024/'):
             return FakeResponse(PAGE_HTML)
         if url.endswith('pattern.svg'):
@@ -81,7 +88,7 @@ def test_unknown_design_redirects_home_with_error(client, braceletbook):
     assert response.headers['Location'] == '/?error=not_found&design=99999'
     page = client.get('/?error=not_found&design=99999')
     assert page.status_code == 404
-    assert b'find a normal pattern' in page.data
+    assert b'normal or alpha pattern' in page.data
     assert b'value="99999"' in page.data
 
 
@@ -118,3 +125,40 @@ def test_old_palette_url_without_referrer_does_not_crash(client):
 def test_old_palette_url_with_referrer_redirects(client):
     response = client.post('/generate-colors/5', headers={'Referer': 'https://example.com/design/1024?hex_codes=aa'})
     assert response.headers['Location'] == '/design/1024/palette?n=5'
+
+
+def test_alpha_number_redirects_to_alpha_editor(client, braceletbook):
+    # The home form always tries normal first; an alpha-only number lands on the alpha editor
+    assert client.post('/submit-design', data={'design_number': '555'}).headers['Location'] == '/design/555'
+    response = client.get('/design/555?hex_codes=ffffff')
+    assert response.headers['Location'] == '/alpha/555?hex_codes=ffffff'
+
+
+def test_alpha_palette_redirect_keeps_path(client, braceletbook):
+    response = client.get('/design/555/palette?n=1')
+    assert response.headers['Location'] == '/alpha/555/palette?n=1'
+
+
+def test_alpha_editor_without_preview(client, braceletbook):
+    response = client.get('/alpha/555')
+    assert response.status_code == 200
+    body = response.data.decode()
+    assert '.k-a{fill:#fff}' in body
+    assert 'class="preview-bar-wrapper"' not in body
+    assert 'const BASE_PATH = "/alpha/555";' in body
+    assert any('/patterns/alpha/555/' in url for url, _ in braceletbook)
+
+
+def test_alpha_palette_uses_pattern_when_no_preview(client, braceletbook):
+    body = client.get('/alpha/555/palette?n=1&hex_codes=ffffff').data.decode()
+    assert '.k-a{fill:#fff}' in body
+    assert 'href="/alpha/555?hex_codes=ffffff"' in body
+    assert 'const BASE_PATH = "/alpha/555";' in body
+
+
+def test_unknown_number_checks_both_kinds(client, braceletbook):
+    response = client.get('/alpha/777')
+    assert response.headers['Location'] == '/?error=not_found&design=777'
+    assert any('/patterns/normal/777/' in url for url, _ in braceletbook)
+    assert any('/patterns/alpha/777/' in url for url, _ in braceletbook)
+    assert b'normal or alpha pattern' in client.get(response.headers['Location']).data

@@ -154,6 +154,57 @@
             }
         }
 
+        .recent {
+            margin-top: 28px;
+            text-align: left;
+        }
+
+        .recent-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            padding-left: 4px;
+            font-weight: 600;
+        }
+
+        .recent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .recent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: #1f263d;
+            border: 1px solid #3d445e;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .recent-item:hover {
+            border-color: var(--accent);
+        }
+
+        .recent-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .recent-dots span {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
         .error-msg {
             margin-top: 25px;
             padding: 14px;
@@ -177,7 +228,7 @@
                 </svg>
             </div>
             <h1>✦ Bracelet Color Studio</h1>
-            <p>Enter a design number from <a href="https://www.braceletbook.com/patterns/normal/" target="_blank" rel="noopener">braceletbook.com</a> to start your design</p>
+            <p>Enter a design number from <a href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">braceletbook.com</a> to start your design</p>
 
             <form id="designForm" method="POST" action="/submit-design">
                 <div class="input-group">
@@ -193,8 +244,51 @@
                 {{ error }}
             </div>
             {% endif %}
+
+            <div class="recent" id="recent" hidden>
+                <div class="recent-title">Recent designs</div>
+                <div class="recent-list" id="recentList"></div>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Recent designs are saved in this browser by the pattern editor
+        (function () {
+            let recent = [];
+            try {
+                recent = JSON.parse(localStorage.getItem('recentDesigns') || '[]');
+            } catch (e) {
+                return;
+            }
+            if (!Array.isArray(recent) || !recent.length) return;
+
+            const list = document.getElementById('recentList');
+            recent.slice(0, 6).forEach(item => {
+                if (!item || !/^\/(design|alpha)\/\d+$/.test(item.path || '')) return;
+                const codes = String(item.hexCodes || '').split(',').filter(c => /^[0-9a-f]{6}$/i.test(c));
+                const link = document.createElement('a');
+                link.className = 'recent-item';
+                link.href = item.path + (codes.length ? '?hex_codes=' + codes.join(',') : '');
+
+                const name = document.createElement('span');
+                name.className = 'recent-name';
+                name.textContent = (item.path.startsWith('/alpha') ? 'Alpha ' : '#') + item.path.split('/').pop();
+                link.appendChild(name);
+
+                const dots = document.createElement('span');
+                dots.className = 'recent-dots';
+                codes.slice(0, 8).forEach(c => {
+                    const dot = document.createElement('span');
+                    dot.style.background = '#' + c;
+                    dots.appendChild(dot);
+                });
+                link.appendChild(dots);
+                list.appendChild(link);
+            });
+            if (list.children.length) document.getElementById('recent').hidden = false;
+        })();
+    </script>
 </body>
 
 </html>
