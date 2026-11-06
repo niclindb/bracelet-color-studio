@@ -189,7 +189,7 @@ def palette(design_number, kind):
 
 @app.route('/generate-colors/<int:num_colors>', methods=['GET', 'POST'])
 def colors(num_colors):
-    # Old Smart Palette URL, kept so existing links and bookmarks still work.
+    # Old color generator URL, kept so existing links and bookmarks still work.
     referrer = request.referrer or ''
     match = re.search(r'/design/(\d+)', referrer)
     if not match:
