@@ -189,7 +189,33 @@
             transition: background 0.2s, transform 0.1s;
         }
 
+        .field button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
         .field button:hover { background: #1f2937; }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2.5px solid rgba(255, 255, 255, 0.35);
+            border-top-color: #fff;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .loading .spinner { display: inline-block; }
+        .field button.loading { cursor: progress; background: #1f2937; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .spinner { animation-duration: 2s; }
+        }
         .field button:active { transform: scale(0.98); }
         .field button:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
 
@@ -381,16 +407,19 @@
     <main class="wrap hero">
         <div class="hero-copy">
             <h1>Recolor any braceletbook pattern.</h1>
-            <p class="lede">Enter a design number to swap in DMC thread colors and try Smart Palettes on the real pattern.</p>
+            <p class="lede">Enter a design number from <a href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">braceletbook.com</a> to swap in DMC thread colors on the real pattern.</p>
 
             <form id="designForm" method="POST" action="/submit-design">
                 <label for="design_number">Paste a design number or braceletbook link</label>
                 <div class="field">
                     <input type="text" id="design_number" name="design_number" placeholder="e.g. 1024"
                         value="{{ design }}" autocomplete="off" autocapitalize="off" spellcheck="false" required>
-                    <button type="submit" id="submitDesign">Load pattern</button>
+                    <button type="submit" id="submitDesign">
+                        <span class="spinner" aria-hidden="true"></span>
+                        <span class="btn-label">Load pattern</span>
+                    </button>
                 </div>
-                <span class="hint">Normal and alpha patterns both work. Find one on <a href="https://www.braceletbook.com/patterns/" target="_blank" rel="noopener">braceletbook.com</a>.</span>
+                <span class="hint">Normal and alpha patterns both work.</span>
             </form>
 
             {% if error %}
@@ -430,6 +459,29 @@
     </section>
 
     <script>
+        // Show a loading state while braceletbook.com is fetched
+        (function () {
+            const form = document.getElementById('designForm');
+            const button = document.getElementById('submitDesign');
+            const label = button.querySelector('.btn-label');
+            form.addEventListener('submit', () => {
+                // Disable after this tick so the submit itself still goes through
+                setTimeout(() => {
+                    button.classList.add('loading');
+                    button.disabled = true;
+                    button.setAttribute('aria-busy', 'true');
+                    label.textContent = 'Loading pattern…';
+                }, 0);
+            });
+            // Reset if the page is restored with the back button
+            window.addEventListener('pageshow', () => {
+                button.classList.remove('loading');
+                button.disabled = false;
+                button.removeAttribute('aria-busy');
+                label.textContent = 'Load pattern';
+            });
+        })();
+
         // Recent designs are saved in this browser by the pattern editor
         (function () {
             let recent = [];
