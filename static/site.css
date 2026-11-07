@@ -9,7 +9,7 @@
     --line: #e5e7eb;
     --field-line: #d1d5db;
     --link: #be185d;
-    --link-hover: #9d174d;
+    --link-hover: #6b0f3a;
     --gutter: clamp(16px, 5vw, 64px);
     --shadow: 0 30px 60px -30px rgba(17, 24, 39, 0.35);
 }
