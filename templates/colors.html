@@ -932,10 +932,22 @@
         // ─────────────────────────────────────────────────────────────
         //  Render
         // ─────────────────────────────────────────────────────────────
-        // Locked slots keep their color; the palette's colors fill the other slots in order
-        function applyLocks(colors) {
+        // The first locked color (lowest slot), or null when nothing is locked
+        function firstLockedColor() {
+            if (!locked.size) return null;
+            return locked.get(Math.min(...locked.keys()));
+        }
+
+        // Set by Shuffle while colors are locked: a random order for the palette's other colors
+        let fillOrder = null;
+
+        // Locked slots keep their color; the palette's colors fill the other slots.
+        // When the palette is built around the first locked color, that color is already
+        // in its slot, so the palette's copy of it (index 0) is left out.
+        function applyLocks(colors, anchored) {
             if (!locked.size) return colors;
-            const free = colors.slice();
+            let free = anchored ? colors.slice(1) : colors.slice();
+            if (fillOrder) free = fillOrder.filter(j => j < free.length).map(j => free[j]);
             return colors.map((_, i) => locked.has(i) ? locked.get(i) : free.shift());
         }
 
@@ -997,6 +1009,8 @@
             if (!chroma.valid(hex)) return;
 
             const useDMC = document.getElementById('dmcToggle').checked;
+            // Palettes are built around the first locked color when it's the base
+            const anchored = hex.toUpperCase() === firstLockedColor();
     
             const categories = [
                 { key: 'harmony', label: 'Harmony' },
@@ -1039,7 +1053,7 @@
                     if (useDMC) {
                         colors = snapToDMC(colors);
                     }
-                    colors = applyLocks(colors);
+                    colors = applyLocks(colors, anchored);
 
                     const urlHexParam = colors.map(h => h.replace('#', '')).join(',');
                     const link = `${BASE_PATH}?hex_codes=${urlHexParam}`;
@@ -1132,10 +1146,22 @@
             }
         };
 
+        // Shuffle: with colors locked, keep building palettes around the first locked
+        // color and shuffle where the other colors go; otherwise pick a random base color
         function setRandomColor() {
             const useDMC = document.getElementById('dmcToggle').checked;
-            let newColor = chroma.random().saturate(1.5).hex();
-            if (useDMC) newColor = getNearestAllowedColor(newColor);
+            let newColor = firstLockedColor();
+            if (newColor) {
+                fillOrder = Array.from({ length: numColors }, (_, i) => i);
+                for (let i = fillOrder.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [fillOrder[i], fillOrder[j]] = [fillOrder[j], fillOrder[i]];
+                }
+            } else {
+                fillOrder = null;
+                newColor = chroma.random().saturate(1.5).hex();
+                if (useDMC) newColor = getNearestAllowedColor(newColor);
+            }
             picker.value = chroma(newColor).hex();
             hexInput.value = chroma(newColor).hex().toUpperCase();
             generate();
