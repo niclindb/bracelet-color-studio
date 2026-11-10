@@ -112,7 +112,9 @@ a:hover { color: var(--link-hover); }
 
 .site-footer strong { color: var(--ink-soft); font-weight: 600; }
 .site-footer a { color: inherit; text-decoration: none; }
-.site-footer a:hover strong { text-decoration: underline; }
+.site-footer a strong { transition: color 0.15s ease; }
+.site-footer a:hover strong,
+.site-footer a:focus-visible strong { color: var(--link-hover); text-decoration: underline; }
 
 .footer-brand { display: inline-flex; align-items: center; gap: 8px; }
 .footer-brand img { flex-shrink: 0; }
